@@ -1,6 +1,6 @@
 # Mlops — Clustering de Pingüinos
 
-Proyecto de agrupamiento (clustering) no supervisado sobre el dataset de pingüinos (Palmer Penguins), usando **K-Means**. El modelo entrenado se guarda como pipeline (imputación + escalado + K-Means) en un archivo `.pkl`.
+Creacion del modelo de agrupamiento (clustering) no supervisado sobre el dataset de pingüinos (Palmer Penguins), usando **K-Means**. El modelo entrenado se guarda como pipeline (imputación + escalado + K-Means) en un archivo `.pkl`.
 
 ## Estructura del proyecto
 
