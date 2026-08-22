@@ -1,4 +1,4 @@
-# Mlops — Clustering de Pingüinos
+# Mlops - Clustering de Pinguinos
 
 Creacion del modelo de agrupamiento (clustering) no supervisado sobre el dataset de pingüinos (Palmer Penguins), usando **Gaussian Mixture Model (GMM)**. El modelo entrenado se guarda como pipeline (imputación + escalado + GMM) en un archivo `.pkl`.
 
