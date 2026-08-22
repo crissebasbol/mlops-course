@@ -1,6 +1,6 @@
 # Mlops — Clustering de Pingüinos
 
-Creacion del modelo de agrupamiento (clustering) no supervisado sobre el dataset de pingüinos (Palmer Penguins), usando **K-Means**. El modelo entrenado se guarda como pipeline (imputación + escalado + K-Means) en un archivo `.pkl`.
+Creacion del modelo de agrupamiento (clustering) no supervisado sobre el dataset de pingüinos (Palmer Penguins), usando **Gaussian Mixture Model (GMM)**. El modelo entrenado se guarda como pipeline (imputación + escalado + GMM) en un archivo `.pkl`.
 
 ## Estructura del proyecto
 
@@ -8,7 +8,7 @@ Creacion del modelo de agrupamiento (clustering) no supervisado sobre el dataset
 Mlops/
 ├── penguins.csv          # Dataset de entrada
 ├── train_model.py        # Script de entrenamiento
-└── penguin_kmeans.pkl    # Modelo entrenado (pipeline serializado)
+└── penguin_gmm.pkl       # Modelo entrenado (pipeline serializado)
 ```
 
 ## Dataset
@@ -57,30 +57,30 @@ Ejecutar el script de entrenamiento:
 
 Esto:
 1. Carga `penguins.csv` y limpia filas con valores nulos en las variables numéricas.
-2. Construye un pipeline: `SimpleImputer` → `StandardScaler` → `KMeans(n_clusters=3)`.
+2. Construye un pipeline: `SimpleImputer` → `StandardScaler` → `GaussianMixture(n_components=3)`.
 3. Entrena el modelo y calcula métricas:
    - **Silhouette score**: qué tan bien separados están los clústeres.
    - **Adjusted Rand Index (ARI)**: qué tanto coinciden los clústeres con la especie real.
    - **Mapeo cluster → especie**: a cada cluster se le asigna el nombre de la especie mayoritaria dentro de él.
    - **Accuracy**: qué tan seguido el nombre de especie asignado coincide con la especie real.
-4. Guarda un diccionario `{"pipeline": ..., "cluster_to_species": ...}` en `penguin_kmeans.pkl` con `joblib`.
+4. Guarda un diccionario `{"pipeline": ..., "cluster_to_species": ...}` en `penguin_gmm.pkl` con `joblib`.
 
 ### Resultados actuales
 
 - Muestras usadas: 342
-- Silhouette score: ~0.199
-- ARI vs especie real: ~0.793
-- Mapeo cluster → especie: `{0: 'Chinstrap', 1: 'Gentoo', 2: 'Adelie'}`
-- Accuracy (especie por cluster mayoritario): ~0.915
+- Silhouette score: ~0.145
+- ARI vs especie real: ~0.960
+- Mapeo cluster → especie: `{0: 'Adelie', 1: 'Gentoo', 2: 'Chinstrap'}`
+- Accuracy (especie por cluster mayoritario): ~0.985
 
 ## Uso del modelo entrenado
 
-El `.pkl` contiene el pipeline de K-Means junto con el mapeo de cluster a nombre de especie, para predecir directamente el nombre en vez del número de cluster:
+El `.pkl` contiene el pipeline de GMM junto con el mapeo de cluster a nombre de especie, para predecir directamente el nombre en vez del número de cluster:
 
 ```python
 import joblib
 
-data = joblib.load("penguin_kmeans.pkl")
+data = joblib.load("penguin_gmm.pkl")
 pipeline = data["pipeline"]
 cluster_to_species = data["cluster_to_species"]
 
@@ -92,6 +92,6 @@ print(especies)  # ['Adelie']
 
 ## Notas
 
-- Se eligió **K-Means** con `n_clusters=3` (una por cada especie: Adelie, Chinstrap, Gentoo) como alternativa a Gaussian Mixture Models (GMM).
+- Se eligió **Gaussian Mixture Model (GMM)** con `n_components=3` (una por cada especie: Adelie, Chinstrap, Gentoo) en lugar de K-Means: al modelar cada cluster como una gaussiana con su propia forma/orientación (en vez de asumir clústeres esféricos como K-Means), captura mejor la superposición entre especies y mejora el ARI (~0.96 vs ~0.79) y la accuracy (~0.985 vs ~0.915).
 - El pipeline serializado incluye el imputador y el escalador, por lo que puede recibir datos crudos sin preprocesar previamente.
-- Como K-Means es no supervisado, los números de cluster no corresponden directamente a una especie; por eso se guarda el mapeo `cluster_to_species` calculado con las etiquetas reales del entrenamiento.
+- Como GMM es no supervisado, los números de cluster no corresponden directamente a una especie; por eso se guarda el mapeo `cluster_to_species` calculado con las etiquetas reales del entrenamiento.

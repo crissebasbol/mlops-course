@@ -1,13 +1,13 @@
 import joblib
 import pandas as pd
-from sklearn.cluster import KMeans
 from sklearn.impute import SimpleImputer
 from sklearn.metrics import accuracy_score, adjusted_rand_score, silhouette_score
+from sklearn.mixture import GaussianMixture
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 CSV_PATH = "penguins.csv"
-MODEL_PATH = "penguin_kmeans.pkl"
+MODEL_PATH = "penguin_gmm.pkl"
 FEATURES = ["bill_length_mm", "bill_depth_mm", "flipper_length_mm", "body_mass_g"]
 N_CLUSTERS = 3  # Adelie, Chinstrap, Gentoo
 
@@ -18,7 +18,7 @@ X = df[FEATURES]
 pipeline = Pipeline([
     ("imputer", SimpleImputer(strategy="mean")),
     ("scaler", StandardScaler()),
-    ("kmeans", KMeans(n_clusters=N_CLUSTERS, random_state=42, n_init=10)),
+    ("gmm", GaussianMixture(n_components=N_CLUSTERS, random_state=42, n_init=10)),
 ])
 
 labels = pipeline.fit_predict(X)
