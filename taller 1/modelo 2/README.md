@@ -32,19 +32,19 @@ El script solo utiliza las 4 columnas numéricas para el clustering; las filas c
 - Python 3.13
 - Entorno virtual del proyecto: `.venv` (ya configurado como intérprete en PyCharm)
 
-Dependencias (instaladas en `.venv`):
+Dependencias (ver `requirements.txt`):
 
 ```
-scikit-learn
-pandas
-numpy
-joblib
+scikit-learn==1.9.0
+pandas==3.0.5
+numpy==2.5.2
+joblib==1.5.3
 ```
 
-Para instalarlas manualmente si hace falta:
+Para instalarlas:
 
 ```bash
-.venv\Scripts\python.exe -m pip install scikit-learn pandas numpy joblib
+.venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
 
 ## Entrenamiento
