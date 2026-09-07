@@ -12,7 +12,7 @@ services:
     build: api
     container_name: penguin-api
     ports:
-      - "8002:8989"
+      - "8025:8989"
     volumes:
       # Modelos versionados que genera el notebook (solo lectura para el api)
       - ./shared_storage/models/:/models:ro
