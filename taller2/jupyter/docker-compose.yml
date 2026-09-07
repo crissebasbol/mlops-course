@@ -1,9 +1,0 @@
-services:
-  jupyter:
-    build: .
-    container_name: jupyter-notebook
-    ports:
-      - "8888:8888"
-    volumes:
-      - ./../shared_storage/:/home/jovyan/work
-    command: start-notebook.sh --NotebookApp.token='' --NotebookApp.password=''
