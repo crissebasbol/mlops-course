@@ -29,10 +29,10 @@ servicio de inferencia.
 | Servicio           | Definido en                  | Puerto host | Para que sirve                                   |
 |--------------------|------------------------------|-------------|--------------------------------------------------|
 | `postgres-data`    | `docker-compose.yml`         | **8002**    | Datos: `raw_penguins` y `clean_penguins`         |
-| `api`              | `docker-compose.yml`         | **8027**    | API de inferencia (FastAPI)                      |
+| `api`              | `docker-compose.yml`         | **8024**    | API de inferencia (FastAPI)                      |
 | `postgres-airflow` | `airflow/docker-compose.yml` | -           | **Solo** metadatos de Airflow (red interna)      |
 | `airflow-init`     | `airflow/docker-compose.yml` | -           | Migra la BD de metadatos y crea el usuario admin |
-| `airflow-webserver`| `airflow/docker-compose.yml` | **8026**    | UI de Airflow                                    |
+| `airflow-webserver`| `airflow/docker-compose.yml` | **8023**    | UI de Airflow                                    |
 | `airflow-scheduler`| `airflow/docker-compose.yml` | -           | Ejecuta el DAG (LocalExecutor)                   |
 
 Volumenes:
@@ -64,8 +64,8 @@ Servicios disponibles:
 
 | Servicio          | En la maquina que levanta el stack | Desde la red                  |
 |-------------------|------------------------------------|-------------------------------|
-| UI de Airflow     | http://localhost:8026              | http://10.43.97.92:8026        |
-| API de inferencia | http://localhost:8027/docs         | http://10.43.97.92:8027/docs   |
+| UI de Airflow     | http://localhost:8023              | http://10.43.97.92:8023        |
+| API de inferencia | http://localhost:8024/docs         | http://10.43.97.92:8024/docs   |
 | Postgres de datos | `localhost:8002`                   | `10.43.97.92:8002`             |
 
 Los puertos son los mismos del `docker-compose.yml`: lo unico que cambia es el
@@ -163,7 +163,7 @@ Detalle completo en `api/README.md`. Resumen:
 ```bash
 # Desde la maquina que levanta el stack; desde la red, cambiar
 # localhost por 10.43.97.92 (el puerto es el mismo).
-curl -X POST http://localhost:8027/predict \
+curl -X POST http://localhost:8024/predict \
   -H "Content-Type: application/json" \
   -d '{
     "bill_length_mm": 39.1,

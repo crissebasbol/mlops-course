@@ -13,10 +13,10 @@ servicios y el DAG del taller.
 |---------------------|-----------------------------|-------------|--------------------------------------------------|
 | `postgres-airflow`  | `taller3-postgres-airflow`  | -           | **Solo** metadatos de Airflow                    |
 | `airflow-init`      | `taller3-airflow-init`      | -           | Migra la base de metadatos y crea el usuario admin |
-| `airflow-webserver` | `taller3-airflow-webserver` | **8026**    | UI de Airflow                                    |
+| `airflow-webserver` | `taller3-airflow-webserver` | **8023**    | UI de Airflow                                    |
 | `airflow-scheduler` | `taller3-airflow-scheduler` | -           | Parsea y ejecuta el DAG                          |
 
-UI en http://localhost:8026, o en http://10.43.97.92:8026 desde la red (mismo
+UI en http://localhost:8023, o en http://10.43.97.92:8023 desde la red (mismo
 puerto, solo cambia el host). Usuario `airflow` y clave `airflow`, definidos en
 `.env`.
 
