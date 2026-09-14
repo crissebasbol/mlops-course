@@ -1,0 +1,3 @@
+# El paquete penguins/ es codigo de soporte, no contiene DAGs:
+# el scheduler no tiene que escanearlo buscando uno.
+penguins/
