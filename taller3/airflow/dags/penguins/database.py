@@ -1,3 +1,4 @@
+import io
 from pathlib import Path
 
 import pandas as pd
@@ -15,12 +16,11 @@ TRAINING_COLUMNS = ["species", "island", "sex"] + NUMERIC_FEATURES
 
 
 class PenguinsDatabase:
-    """Operaciones sobre las tablas raw_penguins y clean_penguins."""
+    """Operaciones sobre las tablas raw_penguins y clean_penguins"""
 
     def __init__(self, conn_id: str = DATA_CONN_ID):
         self.conn_id = conn_id
         self._hook = None
-        self._engine = None
 
     @property
     def hook(self) -> PostgresHook:
@@ -28,12 +28,26 @@ class PenguinsDatabase:
             self._hook = PostgresHook(postgres_conn_id=self.conn_id)
         return self._hook
 
-    @property
-    def engine(self):
-        """Engine de SQLAlchemy"""
-        if self._engine is None:
-            self._engine = self.hook.get_sqlalchemy_engine()
-        return self._engine
+    def _consultar(self, sql: str) -> pd.DataFrame:
+        """Ejecuta una consulta y arma el DataFrame con el resultado."""
+        conn = self.hook.get_conn()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(sql)
+                columnas = [descripcion[0] for descripcion in cur.description]
+                return pd.DataFrame(cur.fetchall(), columns=columnas)
+        finally:
+            conn.close()
+
+    def _copiar(self, sql: str, fuente) -> None:
+        """Ejecuta un COPY ... FROM STDIN leyendo de un archivo o un buffer"""
+        conn = self.hook.get_conn()
+        try:
+            with conn.cursor() as cur:
+                cur.copy_expert(sql, fuente)
+            conn.commit()
+        finally:
+            conn.close()
 
     def reset_tables(self) -> None:
         """Deja la base vacia: borra las tablas y las vuelve a crear."""
@@ -77,28 +91,33 @@ class PenguinsDatabase:
             raise FileNotFoundError(f"No se encontro el CSV en {csv_path}")
 
         columnas = ", ".join(CSV_COLUMNS)
-        copy_sql = f"COPY {RAW_TABLE} ({columnas}) FROM STDIN WITH (FORMAT csv, HEADER true)"
-
-        conn = self.hook.get_conn()
-        try:
-            with conn.cursor() as cur, csv_path.open("r", encoding="utf-8") as fh:
-                cur.copy_expert(copy_sql, fh)
-            conn.commit()
-        finally:
-            conn.close()
-
+        with csv_path.open("r", encoding="utf-8") as fh:
+            self._copiar(
+                f"COPY {RAW_TABLE} ({columnas}) FROM STDIN WITH (FORMAT csv, HEADER true)",
+                fh,
+            )
         return self.count(RAW_TABLE)
 
     def read_raw(self) -> pd.DataFrame:
-        return pd.read_sql(f"SELECT * FROM {RAW_TABLE};", self.engine)
+        return self._consultar(f"SELECT * FROM {RAW_TABLE};")
 
     def write_clean(self, df: pd.DataFrame) -> int:
-        df.to_sql(CLEAN_TABLE, self.engine, if_exists="append", index=False)
+        """Inserta el DataFrame limpio con COPY, igual que los datos crudos"""
+        buffer = io.StringIO()
+        df.to_csv(buffer, index=False, header=False)
+        buffer.seek(0)
+
+        columnas = ", ".join(df.columns)
+        self._copiar(
+            f"COPY {CLEAN_TABLE} ({columnas}) FROM STDIN WITH (FORMAT csv)",
+            buffer,
+        )
         return self.count(CLEAN_TABLE)
 
     def read_clean(self) -> pd.DataFrame:
+        """Devuelve los datos listos para entrenar (sin columnas de control)."""
         columnas = ", ".join(TRAINING_COLUMNS)
-        df = pd.read_sql(f"SELECT {columnas} FROM {CLEAN_TABLE};", self.engine)
+        df = self._consultar(f"SELECT {columnas} FROM {CLEAN_TABLE};")
         if df.empty:
             raise ValueError(f"La tabla '{CLEAN_TABLE}' esta vacia, no hay con que entrenar.")
         return df
