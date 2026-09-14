@@ -1,0 +1,41 @@
+include:
+  - airflow/docker-compose.yml
+
+services:
+  postgres-data:
+    image: postgres:16
+    container_name: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin123
+      POSTGRES_DB: penguins
+    ports:
+      - "8002:5432"
+    volumes:
+      - data-db-volume:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d penguins"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: always
+
+  api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    container_name: taller3-penguin-api
+    ports:
+      - "8027:8989"
+    volumes:
+      - models-volume:/models:ro
+    environment:
+      MODELS_DIR: /models
+    restart: always
+
+volumes:
+  # DB postgres
+  data-db-volume:
+  # Modelos entrenados
+  models-volume:
