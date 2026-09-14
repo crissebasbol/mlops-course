@@ -41,8 +41,8 @@ Los modelos se cargan desde disco una sola vez y se cachean en memoria por
 ### Ejemplo de `/predict`
 
 ```bash
-# Desde la red: http://10.43.97.92:8027/predict
-curl -X POST http://localhost:8027/predict \
+# Desde la red: http://10.43.97.92:8024/predict
+curl -X POST http://localhost:8024/predict \
   -H "Content-Type: application/json" \
   -d '{
     "bill_length_mm": 39.1,
@@ -83,11 +83,11 @@ Desde `taller3/` (levanta el API junto con Airflow y las dos bases de datos):
 docker compose up -d --build
 ```
 
-El API queda disponible en http://localhost:8027 y su documentación
-interactiva en http://localhost:8027/docs.
+El API queda disponible en http://localhost:8024 y su documentación
+interactiva en http://localhost:8024/docs.
 
-Desde la red se llega al mismo servicio en http://10.43.97.92:8027 y
-http://10.43.97.92:8027/docs: el puerto es el que publica el
+Desde la red se llega al mismo servicio en http://10.43.97.92:8024 y
+http://10.43.97.92:8024/docs: el puerto es el que publica el
 `docker-compose.yml`, lo unico que cambia es el host.
 
 > Los modelos los produce el DAG `penguins_training_pipeline`. Hasta que no se

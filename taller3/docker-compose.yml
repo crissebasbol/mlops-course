@@ -27,7 +27,7 @@ services:
       dockerfile: api/Dockerfile
     container_name: taller3-penguin-api
     ports:
-      - "8027:8989"
+      - "8024:8989"
     volumes:
       - models-volume:/models:ro
     environment:
