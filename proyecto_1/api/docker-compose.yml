@@ -1,0 +1,18 @@
+services:
+  # API de inferencia: lee los modelos versionados de MinIO.
+  api:
+    build: .
+    image: proyecto1/api:latest
+    container_name: proyecto1-api
+    ports:
+      - "8011:8989"
+    environment:
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: admin
+      MINIO_SECRET_KEY: admin123
+      MINIO_BUCKET: models
+      MODEL_CACHE_SIZE: 4
+    depends_on:
+      minio:
+        condition: service_healthy
+    restart: always
