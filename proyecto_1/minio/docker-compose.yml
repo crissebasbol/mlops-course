@@ -1,6 +1,6 @@
 services:
   minio:
-    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    image: coollabsio/minio:RELEASE.2025-04-22T22-12-26Z
     container_name: proyecto1-minio
     command: server /data --console-address ":9001"
     environment:
@@ -21,7 +21,7 @@ services:
 
   # Crea el bucket de modelos
   minio-init:
-    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    image: coollabsio/minio:RELEASE.2025-04-22T22-12-26Z
     container_name: proyecto1-minio-init
     entrypoint: /bin/sh
     command:
