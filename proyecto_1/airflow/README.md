@@ -69,6 +69,12 @@ los batches), con `AUTO_RESTART_COLLECTION=true` se llama a
 `/restart_data_generation` y empieza un ciclo nuevo. En esa ejecución no se
 vuelve a pedir `/data`; la siguiente trae el primer batch del ciclo nuevo.
 
+Si el contador del grupo se reinicia por fuera del DAG (alguien llama a
+`/restart_data_generation` o se reinicia el servidor), la API no responde `400`
+sino que vuelve a empezar desde el batch 1. Como dentro de una pasada el batch
+nunca baja, cuando llega uno menor que el mayor ya recibido en el ciclo, esa
+petición se anota en un ciclo nuevo.
+
 Como el batch cambia cada 5 minutos y el DAG corre cada 5 minutos, a veces dos
 ejecuciones seguidas reciben el mismo batch. No pasa nada: las filas repetidas
 no se insertan (`ON CONFLICT DO NOTHING` sobre `row_hash`) y el ciclo solo se
