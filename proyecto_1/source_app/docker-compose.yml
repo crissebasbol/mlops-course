@@ -1,0 +1,23 @@
+services:
+  # Replica local de la Data API del profesor. Airflow la usa como respaldo
+  # cuando el host remoto no responde.
+  source-app:
+    build: .
+    image: proyecto1/source-app:latest
+    container_name: proyecto1-source-app
+    ports:
+      - "8012:80"
+    environment:
+      DATABASE_URL: postgresql://source_app:source_app123@postgres-data:5432/source_app
+      # Segundos que dura cada batch. 300 como el servidor remoto; bajarlo para pruebas.
+      MIN_UPDATE_TIME: ${MIN_UPDATE_TIME:-300}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:80/')"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    depends_on:
+      postgres-data:
+        condition: service_healthy
+    restart: always
