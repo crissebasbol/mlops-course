@@ -1,0 +1,110 @@
+x-airflow-common: &airflow-common
+  build: .
+  image: proyecto1/airflow:2.10.5
+  environment: &airflow-common-env
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres-airflow:5432/airflow
+    AIRFLOW__CORE__FERNET_KEY: ''
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'false'
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session'
+    AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: 'true'
+    AIRFLOW__WEBSERVER__EXPOSE_CONFIG: 'true'
+    AIRFLOW_CONN_COVERTYPE_DATA: postgresql://covertype:covertype123@postgres-data:5432/covertype
+    DATA_SOURCE_MODE: ${DATA_SOURCE_MODE:-auto} # auto (remoto y si no responde source_app) | remote | local
+    REMOTE_API_URL: ${REMOTE_API_URL:-http://10.43.97.110:8080}
+    LOCAL_API_URL: http://source-app:80
+    GROUP_NUMBER: ${GROUP_NUMBER:-1}
+    COLLECT_INTERVAL_SECONDS: ${COLLECT_INTERVAL_SECONDS:-300}
+    AUTO_RESTART_COLLECTION: ${AUTO_RESTART_COLLECTION:-true}
+    TRAIN_ONLY_IF_NO_MODEL: ${TRAIN_ONLY_IF_NO_MODEL:-true}
+    MINIO_ENDPOINT: minio:9000
+    MINIO_ACCESS_KEY: admin
+    MINIO_SECRET_KEY: admin123
+    MINIO_BUCKET: models
+  volumes:
+    - ./dags:/opt/airflow/dags
+    - airflow-logs-volume:/opt/airflow/logs
+  user: "${AIRFLOW_UID:-50000}:0"
+  depends_on: &airflow-common-depends-on
+    postgres-airflow:
+      condition: service_healthy
+    postgres-data:
+      condition: service_healthy
+    minio:
+      condition: service_healthy
+
+services:
+  postgres-airflow:
+    image: postgres:16
+    container_name: proyecto1-postgres-airflow
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - airflow-db-volume:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U airflow -d airflow"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: always
+
+  airflow-init:
+    <<: *airflow-common
+    container_name: proyecto1-airflow-init
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        set -e
+        airflow db migrate
+        airflow users create \
+          --username "${_AIRFLOW_WWW_USER_USERNAME:-airflow}" \
+          --password "${_AIRFLOW_WWW_USER_PASSWORD:-airflow}" \
+          --firstname Admin --lastname User --role Admin \
+          --email admin@example.com || true
+    restart: on-failure
+
+  airflow-webserver:
+    <<: *airflow-common
+    container_name: proyecto1-airflow-webserver
+    command: webserver
+    ports:
+      - "8010:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+
+  airflow-scheduler:
+    <<: *airflow-common
+    container_name: proyecto1-airflow-scheduler
+    command: scheduler
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8974/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    restart: always
+    depends_on:
+      <<: *airflow-common-depends-on
+      airflow-init:
+        condition: service_completed_successfully
+      # Respaldo de la fuente de datos: tiene que estar arriba antes de recolectar.
+      source-app:
+        condition: service_started
+
+volumes:
+  airflow-db-volume:
+  airflow-logs-volume:
