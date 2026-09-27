@@ -46,6 +46,11 @@ def obtener_datos(ti, run_id: str) -> dict:
         return {**base, "status": "restarted", "next_cycle": new_ciclo}
 
     vistos = db.batches_in_cycle(fuente.name, GROUP_NUMBER, ciclo)
+    if vistos and batch.batch_number < max(vistos):
+        ciclo += 1
+        base["cycle"] = ciclo
+        vistos = set()
+        print(f"El servidor reinicio el conteo por fuera del DAG, siguiente ciclo: {ciclo}")
     insertadas = db.insert_raw(
         batch.rows, source=fuente.name, cycle=ciclo, batch_number=batch.batch_number, dag_run_id=run_id
     )
