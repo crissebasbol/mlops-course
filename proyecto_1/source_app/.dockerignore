@@ -1,0 +1,6 @@
+.venv/
+__pycache__/
+*.pyc
+diagram.py
+project_2.png
+python_command_history.py
