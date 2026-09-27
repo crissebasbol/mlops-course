@@ -1,0 +1,23 @@
+[project]
+name = "api"
+version = "0.1.0"
+description = "API de inferencia para los modelos de Covertype guardados en MinIO"
+readme = "README.md"
+authors = [
+    { name = "Cristhian Bolanos", email = "crissebasbol@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "joblib==1.4.2",
+    "numpy==2.1.3",
+    "pandas==2.2.3",
+    "scikit-learn==1.5.2",
+    "scipy==1.14.1",
+    "minio==7.2.15",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.9,<0.13.0"]
+build-backend = "uv_build"
