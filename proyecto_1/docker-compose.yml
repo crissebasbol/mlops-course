@@ -1,0 +1,8 @@
+name: proyecto1
+
+include:
+  - database/docker-compose.yml
+  - minio/docker-compose.yml
+  - source_app/docker-compose.yml
+  - airflow/docker-compose.yml
+  - api/docker-compose.yml
