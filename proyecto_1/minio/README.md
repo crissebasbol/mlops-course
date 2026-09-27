@@ -12,7 +12,11 @@ entrenados por Airflow y de donde los lee la API de inferencia.
 
 Consola web: http://10.43.97.92:8014, usuario `admin`, clave `admin123`.
 
-La imagen está fijada a `RELEASE.2025-04-22T22-12-26Z`: que cuenta con la consola web.
+La imagen es `coollabsio/minio:RELEASE.2025-04-22T22-12-26Z`. MinIO dejó de
+publicar imágenes oficiales (`minio/minio` y `quay.io/minio/minio`), y
+[coollabsio](https://hub.docker.com/r/coollabsio/minio) las compila desde el
+código fuente oficial: es el mismo servidor, con `mc` incluido. Se fija esa
+versión porque es la última con la consola web completa.
 
 ## Organización de los modelos
 
