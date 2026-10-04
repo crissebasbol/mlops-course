@@ -1,0 +1,43 @@
+name: taller4
+
+services:
+  minio:
+    image: coollabsio/minio:RELEASE.2025-04-22T22-12-26Z
+    container_name: taller4-minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: admin
+      MINIO_ROOT_PASSWORD: admin123
+    ports:
+      - "8019:9000"   # API S3
+      - "8020:9001"   # Consola web
+    volumes:
+      - taller4-minio-volume:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: always
+
+  # Crea el bucket de artefactos de MLflow
+  minio-init:
+    image: coollabsio/minio:RELEASE.2025-04-22T22-12-26Z
+    container_name: taller4-minio-init
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        set -e
+        mc alias set local http://minio:9000 admin admin123
+        mc mb --ignore-existing local/mlflows3
+        mc ls local
+    depends_on:
+      minio:
+        condition: service_healthy
+    restart: on-failure
+
+volumes:
+  taller4-minio-volume:
+    name: taller4-minio-volume
