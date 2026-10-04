@@ -1,0 +1,8 @@
+name: taller4
+
+include:
+  - database/docker-compose.yml
+  - minio/docker-compose.yml
+  - mlflow/docker-compose.yml
+  - jupyter/docker-compose.yml
+  - api/docker-compose.yml
