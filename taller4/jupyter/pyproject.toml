@@ -1,0 +1,19 @@
+[project]
+name = "jupyter"
+version = "0.1.0"
+description = "JupyterLab para experimentar con Covertype y registrar todo en MLflow"
+readme = "README.md"
+authors = [
+    { name = "Cristhian Bolanos", email = "crissebasbol@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "mlflow==3.16.1",
+    "boto3",
+    "numpy==2.5.3",
+    "pandas==3.0.6",
+    "scikit-learn==1.9.1",
+    "psycopg[binary]==3.3.6",
+    "sqlalchemy>=2.0",
+    "matplotlib",
+]

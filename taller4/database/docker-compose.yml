@@ -1,0 +1,29 @@
+name: taller4
+
+services:
+  postgres-data:
+    image: postgres:16
+    container_name: taller4-postgres-data
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin123
+      POSTGRES_DB: postgres
+      COVERTYPE_DB_NAME: covertype
+      COVERTYPE_DB_USER: covertype
+      COVERTYPE_DB_PASSWORD: covertype123
+    ports:
+      - "8021:5432"
+    volumes:
+      - taller4-data-db-volume:/var/lib/postgresql/data
+      - ./init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U postgres -d covertype"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: always
+
+volumes:
+  taller4-data-db-volume:
+    name: taller4-data-db-volume
