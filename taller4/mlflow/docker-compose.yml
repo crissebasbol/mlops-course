@@ -1,0 +1,50 @@
+name: taller4
+
+services:
+  postgres-mlflow:
+    image: postgres:16
+    container_name: taller4-postgres-mlflow
+    environment:
+      POSTGRES_USER: mlflow
+      POSTGRES_PASSWORD: mlflow123
+      POSTGRES_DB: mlflow
+    volumes:
+      - taller4-mlflow-db-volume:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U mlflow -d mlflow"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: always
+
+  mlflow:
+    build: .
+    image: taller4/mlflow:3.16.1
+    container_name: taller4-mlflow
+    ports:
+      - "8016:5000"
+    environment:
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+      AWS_ACCESS_KEY_ID: admin
+      AWS_SECRET_ACCESS_KEY: admin123
+      BACKEND_STORE_URI: postgresql://mlflow:mlflow123@postgres-mlflow:5432/mlflow
+      ARTIFACT_ROOT: s3://mlflows3/artifacts
+      MLFLOW_SERVER_ALLOWED_HOSTS: "*"
+      MLFLOW_SERVER_CORS_ALLOWED_ORIGINS: ${MLFLOW_UI_ORIGIN:-http://10.43.97.92:8016}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    depends_on:
+      postgres-mlflow:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    restart: always
+
+volumes:
+  taller4-mlflow-db-volume:
+    name: taller4-mlflow-db-volume
