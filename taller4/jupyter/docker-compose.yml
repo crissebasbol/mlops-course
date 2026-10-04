@@ -1,0 +1,25 @@
+name: taller4
+
+services:
+  jupyter:
+    build: .
+    image: taller4/jupyter:latest
+    container_name: taller4-jupyter
+    ports:
+      - "8017:8888"
+    volumes:
+      - ./notebooks:/home/jovyan/work
+    environment:
+      JUPYTER_TOKEN: admin123
+      GIT_PYTHON_REFRESH: quiet
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+      AWS_ACCESS_KEY_ID: admin
+      AWS_SECRET_ACCESS_KEY: admin123
+      DATA_DB_URL: postgresql+psycopg://covertype:covertype123@postgres-data:5432/covertype
+    depends_on:
+      postgres-data:
+        condition: service_healthy
+      mlflow:
+        condition: service_healthy
+    restart: always
