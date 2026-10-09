@@ -1,0 +1,13 @@
+name: taller5-locust
+
+services:
+  locust:
+    build: .
+    image: taller5/locust:latest
+    container_name: taller5-locust
+    ports:
+      - "${LOCUST_PORT:-8006}:8089"
+    environment:
+      LOCUST_HOST: ${API_HOST:-http://10.43.97.105:8000}
+    volumes:
+      - ./resultados:/resultados
