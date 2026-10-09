@@ -1,0 +1,23 @@
+[project]
+name = "trainer"
+version = "0.1.0"
+description = "Entrena el modelo de Covertype y lo registra en MLflow con el alias champion"
+readme = "README.md"
+authors = [
+    { name = "Cristhian Bolanos", email = "crissebasbol@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "mlflow==3.16.1",
+    "boto3",
+    "numpy==2.5.3",
+    "pandas==3.0.6",
+    "scikit-learn==1.9.1",
+]
+
+[project.scripts]
+train = "trainer:main"
+
+[build-system]
+requires = ["uv_build>=0.12.9,<0.13.0"]
+build-backend = "uv_build"
