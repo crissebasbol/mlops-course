@@ -1,0 +1,22 @@
+[project]
+name = "api"
+version = "1.0.0"
+description = "API de inferencia de Covertype que carga el modelo champion desde MLflow"
+readme = "README.md"
+authors = [
+    { name = "Cristhian Bolanos", email = "crissebasbol@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi",
+    "uvicorn[standard]",
+    "mlflow==3.16.1",
+    "boto3",
+    "numpy==2.5.3",
+    "pandas==3.0.6",
+    "scikit-learn==1.9.1",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.9,<0.13.0"]
+build-backend = "uv_build"

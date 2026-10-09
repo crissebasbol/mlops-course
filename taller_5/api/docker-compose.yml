@@ -1,0 +1,28 @@
+name: taller5
+
+services:
+  api:
+    image: crissebasbol/taller5-api:${API_TAG:-1.0.0}
+    expose:
+      - "8989"
+    cpus: "${API_CPUS:-1.0}"
+    mem_limit: "${API_MEMORY:-1g}"
+    environment:
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+      AWS_ACCESS_KEY_ID: admin
+      AWS_SECRET_ACCESS_KEY: admin123
+      MODEL_NAME: covertype_rf
+      MODEL_ALIAS: champion
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8989/health')"]
+      interval: 10s
+      timeout: 2s
+      retries: 40
+      start_period: 20s
+    depends_on:
+      mlflow:
+        condition: service_healthy
+      trainer:
+        condition: service_completed_successfully
+    restart: always
