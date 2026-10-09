@@ -1,0 +1,22 @@
+name: taller5
+
+services:
+  trainer:
+    build: .
+    image: taller5/trainer:latest
+    container_name: taller5-trainer
+    volumes:
+      - ../../taller4/jupyter/covertype.csv:/data/covertype.csv:ro
+    environment:
+      CSV_PATH: /data/covertype.csv
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      MLFLOW_S3_ENDPOINT_URL: http://minio:9000
+      AWS_ACCESS_KEY_ID: admin
+      AWS_SECRET_ACCESS_KEY: admin123
+      MODEL_NAME: covertype_rf
+      MODEL_ALIAS: champion
+      FORCE_TRAIN: ${FORCE_TRAIN:-false}
+    depends_on:
+      mlflow:
+        condition: service_healthy
+    restart: "no"
