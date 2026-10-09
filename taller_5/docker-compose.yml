@@ -1,0 +1,8 @@
+name: taller5
+
+include:
+  - minio/docker-compose.yml
+  - mlflow/docker-compose.yml
+  - trainer/docker-compose.yml
+  - api/docker-compose.yml
+  - nginx/docker-compose.yml
