@@ -2,7 +2,6 @@
 name = "api"
 version = "1.0.0"
 description = "API de inferencia de Covertype que carga el modelo champion desde MLflow"
-readme = "README.md"
 authors = [
     { name = "Cristhian Bolanos", email = "crissebasbol@gmail.com" }
 ]

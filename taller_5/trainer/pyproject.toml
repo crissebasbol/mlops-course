@@ -2,7 +2,6 @@
 name = "trainer"
 version = "0.1.0"
 description = "Entrena el modelo de Covertype y lo registra en MLflow con el alias champion"
-readme = "README.md"
 authors = [
     { name = "Cristhian Bolanos", email = "crissebasbol@gmail.com" }
 ]
