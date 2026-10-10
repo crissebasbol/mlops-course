@@ -122,7 +122,7 @@ nivel**. Así no hay que lanzar ni detener nada a mano entre niveles.
                               └ ventana 1 ┘                └ ventana 2 ┘
 ```
 
-**1. VM (API): empezar a registrar** (desde `taller_5`):
+**1. VM (API): Empezar a registrar:***
 
 ```bash
 ./scripts/docker_stats.sh rep1
@@ -130,7 +130,7 @@ nivel**. Así no hay que lanzar ni detener nada a mano entre niveles.
 
 Guarda las muestras en `stats/rep1.csv` y se deja corriendo.
 
-**2. VM (Locust): lanzar los niveles** (desde `taller_5/locust`):
+**2. VM (Locust): lanzar los niveles**:
 
 ```bash
 ./run_levels.sh 1 10 30 60 100 150 200 300 400
@@ -184,6 +184,22 @@ TODO imagen: `images/10_rep1_locust_charts.png` con las gráficas de Locust
 (RPS, tiempos de respuesta, usuarios) en el punto de saturación de 1 réplica.
 
 ### 6. Escalar a 3 réplicas (VM `.105`)
+
+Antes de escalar se sube el límite de conexiones de Nginx (de 512 a 4096 por
+proceso, ver [nginx/README.md](nginx/README.md)). En la prueba de 1 réplica, con
+300 y 400 usuarios, Nginx se quedó sin conexiones y respondió `500`. Con 3
+réplicas pasaría justo en la zona donde se espera el límite.
+
+`nginx.conf` se monta como volumen, así que después de actualizar el repo basta
+con reiniciar el contenedor:
+
+```bash
+git pull
+docker compose restart proxy
+docker compose exec proxy nginx -T 2>/dev/null | grep -E "worker_(processes|connections)"
+```
+
+Luego se escala:
 
 ```bash
 docker compose up -d --scale api=3
@@ -259,14 +275,26 @@ de cada nivel) y `stats/locust_rep<N>_u<usuarios>.csv` (CPU de Locust en la
 
 | Usuarios | RPS | Peticiones | Fallos % | p50 (ms) | p95 (ms) | CPU API | RAM API | CPU Locust | Cumple |
 |---:|---:|---:|---:|---:|---:|---:|---:|---:|:---:|
-| 10 | | | | | | | | | |
-| 30 | | | | | | | | | |
-| 60 | | | | | | | | | |
-| 100 | | | | | | | | | |
-| 150 | | | | | | | | | |
-| 200 | | | | | | | | | |
-| 300 | | | | | | | | | |
-| 400 | | | | | | | | | |
+| 10 | 5.6 | 672 | 0.00 | 24 | 41 | | | | sí |
+| 30 | 16.8 | 2028 | 0.00 | 27 | 72 | | | | sí |
+| 60 | 32.4 | 3974 | 0.00 | 55 | 330 | | | | sí |
+| 100 | 39.1 | 4731 | 0.02 | 820 | 1500 | | | | no |
+| 150 | 39.1 | 4718 | 0.30 | 2100 | 2700 | | | | no |
+| 200 | 38.2 | 4610 | 0.13 | 3400 | 4600 | | | | no |
+| 300 \* | 39.5 | 4774 | 1.53 | 5700 | 6800 | | | | no |
+| 400 \* | 84.3 | 10188 | 54.80 | 11 | 7500 | | | | no |
+
+Pico de toda la sesión (`docker_stats.sh rep1`): `taller5-api-1` llegó a
+**104 % de CPU** (1 CPU completa) y **317 MiB de 1 GiB (31 %)** de memoria.
+
+\* Con 300 y 400 usuarios Nginx tenía todavía el límite por defecto de 512
+conexiones y se quedó sin conexiones (`512 worker_connections are not enough`).
+En 400, 4609 peticiones recibieron `500` de Nginx y 974 fallaron al conectar
+(`HTTP 0`), sin llegar a la API. Las respuestas rápidas de esos errores
+(p50 11 ms) son las que suben el RPS a 84. Estos dos niveles miden el
+balanceador, no la réplica. La capacidad de 1 réplica sale de los niveles de 10
+a 200, donde Nginx no llegó a su límite. Para la prueba de 3 réplicas se subió el
+límite (paso 6).
 
 ### 3 réplicas (1 CPU, 1 GB cada una)
 
@@ -287,14 +315,17 @@ Mismos niveles en las dos pruebas:
 
 | Usuarios | RPS 1 réplica | RPS 3 réplicas | p95 1 réplica (ms) | p95 3 réplicas (ms) | Cumple 1 | Cumple 3 |
 |---:|---:|---:|---:|---:|:---:|:---:|
-| 10 | | | | | | |
-| 30 | | | | | | |
-| 60 | | | | | | |
-| 100 | | | | | | |
-| 150 | | | | | | |
-| 200 | | | | | | |
-| 300 | | | | | | |
-| 400 | | | | | | |
+| 10 | 5.6 | | 41 | | sí | |
+| 30 | 16.8 | | 72 | | sí | |
+| 60 | 32.4 | | 330 | | sí | |
+| 100 | 39.1 | | 1500 | | no | |
+| 150 | 39.1 | | 2700 | | no | |
+| 200 | 38.2 | | 4600 | | no | |
+| 300 \* | 39.5 | | 6800 | | no | |
+| 400 \* | 84.3 | | 7500 | | no | |
+
+\* En 1 réplica, afectado por el límite de 512 conexiones de Nginx (ver arriba).
+Comparar estos dos niveles con cuidado.
 
 Mientras ninguna configuración está saturada, el RPS debería ser casi igual en
 las dos (lo fija `wait_time`, no la API). La diferencia aparece cuando la de 1
@@ -348,7 +379,15 @@ TODO. Puntos a revisar con la evidencia:
   `/models`, que sí consulta MLflow). Esta es la diferencia con taller4,
   donde cada `/predict` consultaba el alias en MLflow y MLflow habría sido el
   cuello de botella.
-- **Nginx**: no tiene límite; revisar su CPU en `docker stats` con 3 réplicas.
+- **Nginx**: sí limitó el resultado en la prueba de 1 réplica. Con su
+  configuración por defecto (`events {}`: 1 proceso y 512 conexiones) se quedó
+  sin conexiones con 300 y 400 usuarios y respondió `500` sin pasar las
+  peticiones a la API. El log lo muestra
+  (`512 worker_connections are not enough while connecting to upstream`), y se
+  nota en Locust: en 400 usuarios el RPS sube a 84 con 54.8 % de fallos, cuando
+  la réplica no pasa de ~39 RPS. Antes de la prueba de 3 réplicas se subió a
+  `worker_processes auto` y `worker_connections 4096`. Con 3 réplicas revisar
+  también su CPU en `stats/rep3_por_nivel.csv`.
 - **La propia VM `.105`**: si tiene pocos núcleos, o si otro proceso los usa
   durante la prueba, tres réplicas de 1 CPU pueden no recibir 1 CPU completa cada
   una.
