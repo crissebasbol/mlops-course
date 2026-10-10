@@ -105,41 +105,69 @@ En la siguiente imagen se ve la interfaz web de Locust mostrando los campos para
 
 ### 5. Prueba con 1 réplica
 
-Se diseñó un script que captura estadísticas de docker y se ejecuta en la instancia donde API inferencia está corriendo:
-```bash
-./scripts/docker_stats.sh rep1_u200 140
+Se usan dos terminales, una en cada VM, durante **toda** la sesión de pruebas:
+
+- **VM (API):** `scripts/docker_stats.sh` toma una muestra de
+  `docker stats` cada 2 s con su hora, y sigue hasta Ctrl+C.
+- **VM (Locust):** `run_levels.sh` corre todos los niveles seguidos y
+  anota en `resumen.csv` la hora de inicio y fin de la ventana estable de cada uno.
+
+Al final, `scripts/stats_por_nivel.sh` cruza los dos archivos por hora y calcula
+la CPU y la memoria de cada contenedor **solo dentro de la ventana de cada
+nivel**. Así no hay que lanzar ni detener nada a mano entre niveles.
+
+```text
+(LOCUS)  run_levels.sh   |rampa|--- 50 usuarios ---|pausa|rampa|--- 100 ---|pausa| ...
+(API)    docker_stats.sh  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ...  (Ctrl+C)
+                              └ ventana 1 ┘                └ ventana 2 ┘
 ```
 
-En la instancias donde corre Locust, se ejecuta el script `run_levels.sh` que genera carga de usuarios concurrentes en niveles crecientes.
+**1. VM (API): empezar a registrar** (desde `taller_5`):
+
+```bash
+./scripts/docker_stats.sh rep1
+```
+
+Guarda las muestras en `stats/rep1.csv` y se deja corriendo.
+
+**2. VM (Locust): lanzar los niveles** (desde `taller_5/locust`):
+
 ```bash
 ./run_levels.sh 1 50 100 200 400 800
 ```
 
-Por cada nivel `run_levels.sh`:
+Con los valores por defecto tarda unos 14 minutos:
 
-- Ejecuta `docker compose run --rm --no-deps locust --headless ...` con los
-  mismos parámetros.
-- Guarda los CSV de Locust en `locust/resultados/rep1_u<usuarios>_*.csv`.
-- Guarda la CPU/memoria del propio generador en `stats/locust_rep1_u<usuarios>.csv`.
-- Agrega una fila a `locust/resultados/resumen.csv` con RPS, peticiones, % de
-  fallos, p50/p95/p99 y si **cumple** el criterio.
-- Espera 30 s antes del siguiente nivel.
+| Nivel | Rampa (20 usuarios/s) | Ventana medida | Pausa |
+|---:|---:|---:|---:|
+| 50 | 3 s | 120 s | 30 s |
+| 100 | 5 s | 120 s | 30 s |
+| 200 | 10 s | 120 s | 30 s |
+| 400 | 20 s | 120 s | 30 s |
+| 800 | 40 s | 120 s | 30 s |
 
-Variables para ajustar sin tocar el script (deben quedar iguales entre 1 y 3
-réplicas): `API_HOST`, `SPAWN_RATE`, `STABLE_SECONDS`, `COOLDOWN`,
-`LOCUST_PROCESSES`, `MAX_FAIL_PCT`, `MAX_P95_MS`.
 
-Si la CPU del contenedor de Locust llega a ~100 % (un proceso de Python usa un
-solo núcleo), el límite es del generador y no de la API. En ese caso repetir con
-`LOCUST_PROCESSES=-1 ./run_levels.sh ...` para usar todos los núcleos de la VM
-`.106`.
+**3. VM (API): detener el registro** con Ctrl+C cuando `run_levels.sh` termine.
+
+**4. Cruzar por nivel.** Subir `resumen.csv` de la VM (Locust) a la VM (API) a github y
+en la VM (API).
+
+Muestra una fila por nivel y por contenedor y la guarda en
+`stats/rep1_por_nivel.csv`:
+
+Ya que estamos realizando un script para obtener métricas automatizadas, el reloj debe ser el mismo en ambas máquinas.
+Si los relojes no coincidían, `OFFSET` es la diferencia en segundos
+
+```bash
+OFFSET=0 ./scripts/stats_por_nivel.sh stats/rep1.csv locust/resultados/resumen.csvv
+```
 
 TODO imagen: `images/08_rep1_run_levels.png` con la salida de `run_levels.sh`
 para 1 réplica (tabla final de `resumen.csv`).
 
-TODO imagen: `images/09_rep1_docker_stats.png` con el pico de
-`docker_stats.sh` en la VM `.105` en el nivel máximo que cumple y en el primero
-que no cumple (la API cerca de 100 % de CPU).
+TODO imagen: `images/09_rep1_docker_stats.png` con la salida de
+`stats_por_nivel.sh` para `stats/rep1.csv`, donde se vea la CPU de
+`taller5-api-1` subiendo por nivel hasta ~100 % en el primero que no cumple.
 
 TODO imagen: `images/10_rep1_locust_charts.png` con las gráficas de Locust
 (RPS, tiempos de respuesta, usuarios) en el punto de saturación de 1 réplica.
@@ -164,21 +192,33 @@ tres `replica` distintas.
 
 ### 7. Prueba con 3 réplicas
 
-Mismos comandos, mismo `locustfile.py`, misma tasa de aparición, misma ventana y
-mismo criterio. Solo cambia el primer argumento:
+Mismo procedimiento del paso 5, mismo `locustfile.py`, misma tasa de aparición,
+misma ventana y mismo criterio. Solo cambian el nombre del registro y el primer
+argumento de `run_levels.sh`:
 
 ```bash
-# VM .105
-./scripts/docker_stats.sh rep3_u600 150
-# VM .106
+# 1. VM .105 (se deja corriendo; Ctrl+C al final)
+./scripts/docker_stats.sh rep3
+# 2. VM .106
 ./run_levels.sh 3 200 400 600 800 1200
+# (opcional) afinar alrededor del límite, sin detener docker_stats.sh
+./run_levels.sh 3 <niveles intermedios>
+# 3. VM .105: Ctrl+C en docker_stats.sh
+# 4. VM .105: copiar de nuevo resumen.csv de la .106 y cruzar
+./scripts/stats_por_nivel.sh stats/rep3.csv locust/resultados/resumen.csv
 ```
+
+`resumen.csv` tiene ahora filas de 1 y de 3 réplicas. Esto no es problema: con
+`stats/rep3.csv` solo coinciden las ventanas de las pruebas de 3 réplicas, y la
+salida (`stats/rep3_por_nivel.csv`) trae una fila por réplica (`taller5-api-1`,
+`-2`, `-3`), además de Nginx.
 
 TODO imagen: `images/12_rep3_run_levels.png` con la salida de `run_levels.sh`
 para 3 réplicas.
 
-TODO imagen: `images/13_rep3_docker_stats.png` con el pico de `docker_stats.sh`
-mostrando las tres réplicas y Nginx en el nivel de saturación.
+TODO imagen: `images/13_rep3_docker_stats.png` con la salida de
+`stats_por_nivel.sh` para `stats/rep3.csv`, mostrando las tres réplicas y Nginx
+en el nivel de saturación.
 
 TODO imagen: `images/14_rep3_locust_charts.png` con las gráficas de Locust en el
 punto de saturación de 3 réplicas.
@@ -198,8 +238,11 @@ docker compose down -v
 
 ## Resultados
 
-Llenar con `locust/resultados/resumen.csv` (VM `.106`) y `stats/*.csv`
-(CPU/memoria de la VM `.105`).
+Llenar con `locust/resultados/resumen.csv` (RPS, peticiones, fallos, p50, p95,
+cumple), `stats/rep1_por_nivel.csv` y `stats/rep3_por_nivel.csv` (CPU y RAM de
+la API y de Nginx en la `.105`: usar `cpu_prom_pct` y `mem_max_mib` de la ventana
+de cada nivel) y `stats/locust_rep<N>_u<usuarios>.csv` (CPU de Locust en la
+`.106`).
 
 ### 1 réplica (1 CPU, 1 GB)
 
