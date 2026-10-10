@@ -173,49 +173,41 @@ Si los relojes no coincidían, `OFFSET` es la diferencia en segundos
 OFFSET=0 ./scripts/stats_por_nivel.sh stats/rep1.csv locust/resultados/resumen.csv
 ```
 
-TODO imagen: `images/08_rep1_run_levels.png` con la salida de `run_levels.sh`
-para 1 réplica (tabla final de `resumen.csv`).
+Salida final de `run_levels.sh` con 1 réplica (VM Locust). Desde 100 usuarios el
+RPS se queda en ~39 y el p95 se dispara. En 400 aparecen los `500` de Nginx:
 
-TODO imagen: `images/09_rep1_docker_stats.png` con la salida de
-`stats_por_nivel.sh` para `stats/rep1.csv`, donde se vea la CPU de
-`taller5-api-1` subiendo por nivel hasta ~100 % en el primero que no cumple.
+![run_levels 1 réplica](images/08_rep1_run_levels.png)
 
-TODO imagen: `images/10_rep1_locust_charts.png` con las gráficas de Locust
-(RPS, tiempos de respuesta, usuarios) en el punto de saturación de 1 réplica.
+Pico de toda la sesión al detener `docker_stats.sh` (VM API). `taller5-api-1`
+llega a 104 % de CPU (1 CPU completa) con solo 317 MiB de memoria:
 
-### 6. Escalar a 3 réplicas (VM `.105`)
+![docker_stats 1 réplica](images/09_rep1_docker_stats.png)
+
+Log de Nginx durante los niveles de 300 y 400 usuarios: se quedó sin conexiones
+con su límite por defecto de 512:
+
+![nginx worker_connections](images/10_rep1_nginx_worker_connections.png)
+
+El detalle por nivel (salida de `stats_por_nivel.sh`, en
+`stats/rep1_por_nivel.csv`) está en [Resultados](#1-réplica-1-cpu-1-gb).
+
+### 6. Escalar a 3 réplicas
 
 Antes de escalar se sube el límite de conexiones de Nginx (de 512 a 4096 por
 proceso, ver [nginx/README.md](nginx/README.md)). En la prueba de 1 réplica, con
 300 y 400 usuarios, Nginx se quedó sin conexiones y respondió `500`. Con 3
 réplicas pasaría justo en la zona donde se espera el límite.
 
-`nginx.conf` se monta como volumen, así que después de actualizar el repo basta
-con reiniciar el contenedor:
-
-```bash
-git pull
-docker compose restart proxy
-docker compose exec proxy nginx -T 2>/dev/null | grep -E "worker_(processes|connections)"
-```
-
-Luego se escala:
+Se prosigue incrementando el número de réplicas a 3:
 
 ```bash
 docker compose up -d --scale api=3
 docker compose ps api
 ```
 
-Nginx descubre las réplicas nuevas solo (vuelve a resolver `api` cada 5 s). Para
-comprobar que reparte, se llama varias veces y el campo `replica` debe cambiar:
+Es importante comprobar que las tres instancias estén respondiendo:
 
-```bash
-for i in $(seq 6); do curl -s http://10.43.97.105:8000/health; echo; done
-```
-
-TODO imagen: `images/11_docker_ps_3_replicas.png` con `taller5-api-1`,
-`taller5-api-2` y `taller5-api-3` `healthy`, y la salida del `for` mostrando
-tres `replica` distintas.
+![images/11_docker_ps_3_replicas.png](images/11_docker_ps_3_replicas.png)
 
 ### 7. Prueba con 3 réplicas
 
@@ -224,15 +216,8 @@ misma ventana y mismo criterio. Solo cambian el nombre del registro y el primer
 argumento de `run_levels.sh`:
 
 ```bash
-# 1. VM .105 (se deja corriendo; Ctrl+C al final)
 ./scripts/docker_stats.sh rep3
-# 2. VM .106
 ./run_levels.sh 3 10 30 60 100 150 200 300 400
-# (opcional) afinar alrededor del límite, sin detener docker_stats.sh
-./run_levels.sh 3 <niveles intermedios>
-# 3. VM .105: Ctrl+C en docker_stats.sh
-# 4. VM .105: copiar de nuevo resumen.csv de la .106 y cruzar
-./scripts/stats_por_nivel.sh stats/rep3.csv locust/resultados/resumen.csv
 ```
 
 `resumen.csv` tiene ahora filas de 1 y de 3 réplicas. Esto no es problema: con
@@ -273,19 +258,54 @@ de cada nivel) y `stats/locust_rep<N>_u<usuarios>.csv` (CPU de Locust en la
 
 ### 1 réplica (1 CPU, 1 GB)
 
-| Usuarios | RPS | Peticiones | Fallos % | p50 (ms) | p95 (ms) | CPU API | RAM API | CPU Locust | Cumple |
+| Usuarios | RPS | Peticiones | Fallos % | p50 (ms) | p95 (ms) | CPU API prom / máx | RAM API máx | CPU Locust prom / máx | Cumple |
 |---:|---:|---:|---:|---:|---:|---:|---:|---:|:---:|
-| 10 | 5.6 | 672 | 0.00 | 24 | 41 | | | | sí |
-| 30 | 16.8 | 2028 | 0.00 | 27 | 72 | | | | sí |
-| 60 | 32.4 | 3974 | 0.00 | 55 | 330 | | | | sí |
-| 100 | 39.1 | 4731 | 0.02 | 820 | 1500 | | | | no |
-| 150 | 39.1 | 4718 | 0.30 | 2100 | 2700 | | | | no |
-| 200 | 38.2 | 4610 | 0.13 | 3400 | 4600 | | | | no |
-| 300 \* | 39.5 | 4774 | 1.53 | 5700 | 6800 | | | | no |
-| 400 \* | 84.3 | 10188 | 54.80 | 11 | 7500 | | | | no |
+| 10 | 5.6 | 672 | 0.00 | 24 | 41 | 11 % / 27 % | 304 MiB | 3 % / 20 % | sí |
+| 30 | 16.8 | 2028 | 0.00 | 27 | 72 | 33 % / 49 % | 312 MiB | 8 % / 16 % | sí |
+| **60** | **32.4** | 3974 | 0.00 | 55 | **330** | 72 % / 100 % | 304 MiB | 13 % / 22 % | **sí** |
+| 100 | 39.1 | 4731 | 0.02 | 820 | 1500 | 96 % / 102 % | 316 MiB | 15 % / 25 % | no |
+| 150 | 39.1 | 4718 | 0.30 | 2100 | 2700 | 101 % / 102 % | 316 MiB | 16 % / 28 % | no |
+| 200 | 38.2 | 4610 | 0.13 | 3400 | 4600 | 101 % / 102 % | 316 MiB | 15 % / 37 % | no |
+| 300 \* | 39.5 | 4774 | 1.53 | 5700 | 6800 | 101 % / 104 % | 316 MiB | 20 % / 35 % | no |
+| 400 \* | 84.3 | 10188 | 54.80 | 11 | 7500 | 100 % / 103 % | 317 MiB | 36 % / 42 % | no |
 
-Pico de toda la sesión (`docker_stats.sh rep1`): `taller5-api-1` llegó a
-**104 % de CPU** (1 CPU completa) y **317 MiB de 1 GiB (31 %)** de memoria.
+Fuentes:
+- **RPS a p95:** `locust/resultados/resumen.csv`.
+- **CPU y RAM de la API:** `stats/rep1_por_nivel.csv`, solo con las muestras de la ventana estable de cada nivel.
+- **CPU de Locust:** `stats/locust_rep1_u<usuarios>.csv`. Solo cuenta el contenedor de la prueba (`taller5-locust-locust-run-*`) y no la primera muestra, porque ese ~99 % es Python cargando Locust al arrancar. El contenedor de la UI (`taller5-locust`) también aparece en esos archivos, pero estuvo en reposo (0 %).
+
+**Lectura:**
+
+- **Techo de ~39 RPS.** De 100 a 300 usuarios el RPS queda entre 38 y 39.5,
+  aunque los usuarios se tripliquen; lo único que crece es la espera (p50 de
+  820 ms a 5700 ms). Una petición sin cola tarda ~25 ms, o sea que 1 CPU atiende
+  ~40 por segundo, y eso coincide con el techo.
+- **Concurrencia máxima sostenible: 60 usuarios, 32.4 RPS, p95 de 330 ms.** En
+  100 usuarios la demanda (~57 RPS) ya pasa el techo y el p95 sube a 1500 ms.
+  El límite real está entre 60 y 100 usuarios.
+- **Lo que se satura es la CPU.** El promedio de la API pasa de 11 % (10
+  usuarios) a 72 % (60) y queda en ~100 % (1 CPU completa) desde 100 usuarios.
+  La memoria se mantiene entre 300 y 317 MiB en todos los niveles: el modelo ya
+  está cargado y la carga no la cambia. Usa el 31 % de 1 GiB.
+- **El generador no fue el límite.** Locust no pasó de 42 % de CPU en ningún
+  nivel.
+- **Fallos de 100 a 200 usuarios.** Hubo entre 1 y 14 respuestas `502 Bad
+  Gateway` de Nginx por nivel (0.02 % a 0.30 %). Son pocas y no cambian el
+  resultado: el criterio falla por el p95, no por los fallos.
+
+Uso de los demás servicios en la ventana de cada nivel (`stats/rep1_por_nivel.csv`):
+
+| Usuarios | MLflow CPU prom / máx | MinIO CPU prom | Postgres CPU prom | Nginx CPU prom / máx | Nginx RAM |
+|---:|---:|---:|---:|---:|---:|
+| 10 | 3.4 % / 15.5 % | 1.1 % | 1.1 % | 0.2 % / 0.3 % | 2 MiB |
+| 60 | 3.5 % / 15.6 % | 0.9 % | 1.2 % | 1.3 % / 1.8 % | 3 MiB |
+| 100 | 2.3 % / 8.4 % | 1.2 % | 0.8 % | 1.2 % / 1.7 % | 3 MiB |
+| 200 | 3.0 % / 18.3 % | 0.1 % | 1.1 % | 1.1 % / 1.5 % | 5 MiB |
+| 400 | 3.7 % / 16.7 % | 0.8 % | 0.7 % | 2.6 % / 3.3 % | 6 MiB |
+
+MLflow, MinIO y Postgres consumen lo mismo con 10 que con 400 usuarios (MLflow
+~3 % con picos de ~16 %, que son tareas propias de su servidor). Esto confirma
+que `/predict` no los usa. MLflow ocupa 2.3 GB de RAM, pero quieto.
 
 \* Con 300 y 400 usuarios Nginx tenía todavía el límite por defecto de 512
 conexiones y se quedó sin conexiones (`512 worker_connections are not enough`).
@@ -335,10 +355,11 @@ réplica se queda en su techo y la de 3 sigue subiendo.
 
 | Métrica | 1 réplica | 3 réplicas | Cambio |
 |---------|----------:|-----------:|-------:|
-| Concurrencia máxima sostenible (usuarios) | TODO | TODO | TODO % |
-| RPS en ese nivel | TODO | TODO | TODO % |
-| p95 en ese nivel (ms) | TODO | TODO | |
-| Primer nivel que no cumple | TODO | TODO | |
+| Concurrencia máxima sostenible (usuarios) | 60 | TODO | TODO % |
+| RPS en ese nivel | 32.4 | TODO | TODO % |
+| p95 en ese nivel (ms) | 330 | TODO | |
+| Primer nivel que no cumple | 100 | TODO | |
+| Techo de RPS (niveles saturados) | ~39 | TODO | TODO % |
 
 Cambio % = `(3 réplicas - 1 réplica) / 1 réplica × 100`. Un escalado perfecto
 sería +200 % (3×).
@@ -348,7 +369,11 @@ sería +200 % (3×).
 **¿Cuál es la concurrencia máxima sostenible y cuántos RPS procesa una réplica
 limitada a 1 CPU y 1 GB?**
 
-TODO: último nivel de la tabla de 1 réplica que cumple el criterio, con su RPS.
+**60 usuarios concurrentes, con 32.4 RPS** (p95 de 330 ms, 0 % de fallos). Es el
+último nivel que cumple el criterio. En el siguiente nivel probado, 100
+usuarios, el p95 sube a 1500 ms, así que el límite exacto está entre 60 y 100
+usuarios. La réplica no procesa más de **~39 RPS**: ese valor se mantiene de 100
+a 300 usuarios.
 
 **¿Cuál es la concurrencia máxima sostenible y cuántos RPS procesan tres réplicas
 con esos mismos límites por réplica?**
@@ -364,21 +389,32 @@ en la siguiente pregunta.
 **¿Qué recurso se saturó primero y qué evidencia muestran `docker stats`, Locust
 y la máquina generadora de carga?**
 
-TODO. Lo que se espera ver si el límite es la API: la CPU de cada réplica llega a
-~100 % (1 CPU) mientras la memoria queda muy por debajo de 1 GB; en Locust el RPS
-deja de subir aunque aumenten los usuarios y el p95 crece de golpe; la CPU del
-contenedor de Locust en `.106` queda lejos de su límite.
+**Con 1 réplica, la CPU de la API.** Las tres fuentes coinciden:
+
+- **`docker stats`** (`stats/rep1_por_nivel.csv`): la CPU promedio de
+  `taller5-api-1` sube con la carga (11 % → 33 % → 72 %) y desde 100 usuarios
+  queda en ~100 %, que es su límite de 1 CPU. La memoria se mantiene en ~310 MiB
+  de 1 GiB en todos los niveles: no está ni cerca de su límite.
+- **Locust** (`resumen.csv`): desde 100 usuarios el RPS deja de subir (~39) aunque
+  aumenten los usuarios, y lo que crece es la latencia (p95 de 330 ms a
+  1500, 2700, 4600 ms). Es lo que pasa cuando el servidor ya está al máximo y las
+  peticiones hacen fila.
+- **Máquina generadora** (`stats/locust_rep1_u*.csv`): Locust usó como máximo
+  42 % de CPU, así que el límite medido no es el del generador.
+
+TODO: completar con la prueba de 3 réplicas.
 
 **¿Qué servicios adicionales (MLflow, base de datos o balanceador) pudieron
 limitar el resultado?**
 
 TODO. Puntos a revisar con la evidencia:
 
-- **MLflow, MinIO y Postgres**: la API solo los usa al arrancar, así que durante
-  la prueba su CPU debería quedarse en ~0 % (siempre que nadie llame
-  `/models`, que sí consulta MLflow). Esta es la diferencia con taller4,
-  donde cada `/predict` consultaba el alias en MLflow y MLflow habría sido el
-  cuello de botella.
+- **MLflow, MinIO y Postgres**: no limitaron. La API solo los usa al arrancar,
+  para descargar el modelo. En la prueba de 1 réplica su CPU fue la misma con 10
+  que con 400 usuarios: MLflow ~3 % (picos de ~16 % propios de su servidor),
+  MinIO y Postgres ~1 % (tabla en Resultados). Esta es la diferencia con
+  taller4, donde cada `/predict` consultaba el alias en MLflow y MLflow habría
+  sido el cuello de botella. Sí ocupan memoria de la VM: MLflow 2.3 GB.
 - **Nginx**: sí limitó el resultado en la prueba de 1 réplica. Con su
   configuración por defecto (`events {}`: 1 proceso y 512 conexiones) se quedó
   sin conexiones con 300 y 400 usuarios y respondió `500` sin pasar las
