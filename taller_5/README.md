@@ -39,7 +39,7 @@ docker buildx build --platform linux/amd64,linux/arm64 \
   --push api
 ```
 
-En la siguiend imagen se ve la publicación en Docker Hub, con la etiqueta `1.0.0` y `latest`.
+En la siguiente imagen se ve la publicación en Docker Hub, con la etiqueta `1.0.0` y `latest`.
 ![dockerhub](images/01_dockerhub.png)
 
 ### 2. Levantar el stack con una réplica
@@ -116,13 +116,19 @@ Al final, `scripts/stats_por_nivel.sh` cruza los dos archivos por hora y calcula
 la CPU y la memoria de cada contenedor **solo dentro de la ventana de cada
 nivel**. Así no hay que lanzar ni detener nada a mano entre niveles.
 
+**Criterio de capacidad**, el mismo para 1 y 3 réplicas: un nivel **cumple** si,
+durante los 2 minutos estables (después de que aparecieron todos los usuarios),
+tiene **menos de 1 % de fallos** y un **p95 menor a 500 ms**. La concurrencia
+máxima sostenible es el último nivel que cumple. `run_levels.sh` lo evalúa solo
+y lo anota en la columna `cumple` de `resumen.csv`.
+
 ```text
-(LOCUS)  run_levels.sh   |rampa|--- 10 usuarios ---|pausa|rampa|--- 30 ----|pausa| ...
+(LOCUST) run_levels.sh   |rampa|--- 10 usuarios ---|pausa|rampa|--- 30 ----|pausa| ...
 (API)    docker_stats.sh  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ...  (Ctrl+C)
                               └ ventana 1 ┘                └ ventana 2 ┘
 ```
 
-**1. VM (API): Empezar a registrar:***
+**1. VM (API): Empezar a registrar:**
 
 ```bash
 ./scripts/docker_stats.sh rep1
@@ -160,18 +166,18 @@ detiene y pide moverlo o borrarlo.
 
 **3. VM (API): detener el registro** con Ctrl+C cuando `run_levels.sh` termine.
 
-**4. Cruzar por nivel.** Subir `resumen.csv` de la VM (Locust) a la VM (API) a github y
-en la VM (API).
-
-Muestra una fila por nivel y por contenedor y la guarda en
-`stats/rep1_por_nivel.csv`:
-
-Ya que estamos realizando un script para obtener métricas automatizadas, el reloj debe ser el mismo en ambas máquinas.
-Si los relojes no coincidían, `OFFSET` es la diferencia en segundos
+**4. Cruzar por nivel.** Subir `resumen.csv` de la VM (Locust) a GitHub, hacer
+`git pull` en la VM (API) y, en la VM (API), correr:
 
 ```bash
 OFFSET=0 ./scripts/stats_por_nivel.sh stats/rep1.csv locust/resultados/resumen.csv
 ```
+
+Muestra una fila por nivel y por contenedor y la guarda en
+`stats/rep1_por_nivel.csv`.
+
+Como el cruce se hace por hora, el reloj debe ser el mismo en ambas máquinas. Si
+los relojes no coinciden, `OFFSET` es la diferencia en segundos.
 
 Salida final de `run_levels.sh` con 1 réplica (VM Locust). Desde 100 usuarios el
 RPS se queda en ~39 y el p95 se dispara. En 400 aparecen los `500` de Nginx:
@@ -188,14 +194,14 @@ con su límite por defecto de 512:
 
 ![nginx worker_connections](images/10_rep1_nginx_worker_connections.png)
 
-El detalle por nivel (salida de `stats_por_nivel.sh`, en
-`stats/rep1_por_nivel.csv`) está en [Resultados](#1-réplica-1-cpu-1-gb).
+El detalle por nivel queda en `stats/rep1_por_nivel.csv` (salida de
+`stats_por_nivel.sh`), y su lectura en la pregunta 4.
 
 ### 6. Escalar a 3 réplicas
 
 Las dos pruebas se corren con la misma configuración de Nginx, la que viene por
 defecto: 1 proceso con 512 conexiones (ver [nginx/README.md](nginx/README.md)).
-Ese límite aparece en los niveles más altos de las dos pruebas (ver Resultados).
+Ese límite aparece en los niveles más altos de las dos pruebas (ver pasos 5 y 7).
 
 Se prosigue incrementando el número de réplicas a 3:
 
@@ -351,6 +357,12 @@ tramo desde 1:34:
 
 ![nginx 4096 failures](images/20_rep3_nginx4096_failures.png)
 
+Con 4100 usuarios aparecen tres errores: 3423 `500` desde las 1:38:01, cuando
+iban ~2000 usuarios y, con 2 conexiones por petición, se pasa el límite de 4096;
+551 `504`, peticiones que esperaron más de 60 s (el tiempo de espera por defecto
+de Nginx hacia las réplicas); y 3474 `502`, respuestas inválidas de las réplicas
+saturadas.
+
 Comparación del mismo nivel de 1000 usuarios:
 
 | | Nginx 512 conexiones (1:17-1:18) | Nginx 4096 conexiones (1:34-1:37) |
@@ -415,7 +427,8 @@ Sin saturación, el costo es parecido en las dos (~16-20 ms). O sea, la réplica
 
 Sí apareció un límite adicional en el techo de 3 réplicas: con 300 y 400
 usuarios el RPS se estanca en ~141, aunque las réplicas promedian 72-87 % de
-CPU y no 100 % (2.4 de 3 CPU). 
+CPU y no 100 % (2.4 de 3 CPU). Lo más probable es que sea la CPU compartida de
+la VM (ver conclusión 5).
 
 **¿Qué recurso se saturó primero y qué evidencia muestran `docker stats`, Locust
 y la máquina generadora de carga?**
@@ -500,4 +513,4 @@ limitar el resultado?**
 5. **En el techo de 3 réplicas aparece un límite adicional.** Las réplicas no
    llegan a un 100 % sostenido (promedian 72-87 %), lo que apunta a la CPU
    compartida de la VM. Para escalar más allá habría que repartir las réplicas
-   entre varias VMs, o sconfirmar primero cuántos núcleos libres tiene la VM.
+   entre varias VMs, o confirmar primero cuántos núcleos libres tiene la VM.

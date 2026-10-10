@@ -84,4 +84,4 @@ Por cada nivel, en `resultados/`:
 | `rep<N>_u<usuarios>_stats_history.csv` | Serie en el tiempo (RPS, percentiles, usuarios). |
 | `rep<N>_u<usuarios>_failures.csv` | Fallos agrupados por mensaje (útil para ver si son 502, timeouts, etc.). |
 | `rep<N>_u<usuarios>_exceptions.csv` | Excepciones del propio Locust. |
-| `resumen.csv` | Una fila por nivel: `replicas,usuarios,rps,peticiones,fallos,fallos_pct,p50_ms,p95_ms,p99_ms,cumple`. |
+| `resumen.csv` | Una fila por nivel: `replicas,usuarios,rps,peticiones,fallos,fallos_pct,p50_ms,p95_ms,p99_ms,cumple,inicio_epoch,fin_epoch`. |
