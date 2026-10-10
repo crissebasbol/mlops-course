@@ -117,7 +117,7 @@ la CPU y la memoria de cada contenedor **solo dentro de la ventana de cada
 nivel**. Así no hay que lanzar ni detener nada a mano entre niveles.
 
 ```text
-(LOCUS)  run_levels.sh   |rampa|--- 50 usuarios ---|pausa|rampa|--- 100 ---|pausa| ...
+(LOCUS)  run_levels.sh   |rampa|--- 10 usuarios ---|pausa|rampa|--- 30 ----|pausa| ...
 (API)    docker_stats.sh  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ·  ...  (Ctrl+C)
                               └ ventana 1 ┘                └ ventana 2 ┘
 ```
@@ -133,16 +133,29 @@ Guarda las muestras en `stats/rep1.csv` y se deja corriendo.
 **2. VM (Locust): lanzar los niveles** (desde `taller_5/locust`):
 
 ```bash
-./run_levels.sh 1 50 100 200 400 800
+./run_levels.sh 1 10 30 60 100 150 200 300 400
 ```
+
+Se usan **los mismos niveles en la prueba de 1 y de 3 réplicas**, para poder
+comparar nivel por nivel. La lista cubre las dos zonas donde se espera el límite:
+una réplica atiende unos 39 RPS (unos 60-80 usuarios con `wait_time` de 1 a
+2.5 s) y tres réplicas unos 117 RPS (unos 200 usuarios). Los niveles más altos
+muestran la saturación de cada configuración.
 
 | Nivel | Rampa (20 usuarios/s) | Ventana medida | Pausa |
 |---:|---:|---:|---:|
-| 50 | 3 s | 120 s | 30 s |
+| 10 | 1 s | 120 s | 30 s |
+| 30 | 2 s | 120 s | 30 s |
+| 60 | 3 s | 120 s | 30 s |
 | 100 | 5 s | 120 s | 30 s |
+| 150 | 8 s | 120 s | 30 s |
 | 200 | 10 s | 120 s | 30 s |
+| 300 | 15 s | 120 s | 30 s |
 | 400 | 20 s | 120 s | 30 s |
-| 800 | 40 s | 120 s | 30 s |
+
+En total tarda unos 21 minutos. Si ya existe un `resumen.csv` de una versión
+anterior del script (sin `inicio_epoch` ni `fin_epoch`), `run_levels.sh` se
+detiene y pide moverlo o borrarlo.
 
 
 **3. VM (API): detener el registro** con Ctrl+C cuando `run_levels.sh` termine.
@@ -157,7 +170,7 @@ Ya que estamos realizando un script para obtener métricas automatizadas, el rel
 Si los relojes no coincidían, `OFFSET` es la diferencia en segundos
 
 ```bash
-OFFSET=0 ./scripts/stats_por_nivel.sh stats/rep1.csv locust/resultados/resumen.csvv
+OFFSET=0 ./scripts/stats_por_nivel.sh stats/rep1.csv locust/resultados/resumen.csv
 ```
 
 TODO imagen: `images/08_rep1_run_levels.png` con la salida de `run_levels.sh`
@@ -198,7 +211,7 @@ argumento de `run_levels.sh`:
 # 1. VM .105 (se deja corriendo; Ctrl+C al final)
 ./scripts/docker_stats.sh rep3
 # 2. VM .106
-./run_levels.sh 3 200 400 600 800 1200
+./run_levels.sh 3 10 30 60 100 150 200 300 400
 # (opcional) afinar alrededor del límite, sin detener docker_stats.sh
 ./run_levels.sh 3 <niveles intermedios>
 # 3. VM .105: Ctrl+C en docker_stats.sh
@@ -246,23 +259,48 @@ de cada nivel) y `stats/locust_rep<N>_u<usuarios>.csv` (CPU de Locust en la
 
 | Usuarios | RPS | Peticiones | Fallos % | p50 (ms) | p95 (ms) | CPU API | RAM API | CPU Locust | Cumple |
 |---:|---:|---:|---:|---:|---:|---:|---:|---:|:---:|
-| 50 | | | | | | | | | |
+| 10 | | | | | | | | | |
+| 30 | | | | | | | | | |
+| 60 | | | | | | | | | |
 | 100 | | | | | | | | | |
+| 150 | | | | | | | | | |
 | 200 | | | | | | | | | |
+| 300 | | | | | | | | | |
 | 400 | | | | | | | | | |
-| 800 | | | | | | | | | |
 
 ### 3 réplicas (1 CPU, 1 GB cada una)
 
 | Usuarios | RPS | Peticiones | Fallos % | p50 (ms) | p95 (ms) | CPU API (c/u) | RAM API (c/u) | CPU Nginx | CPU Locust | Cumple |
 |---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|:---:|
+| 10 | | | | | | | | | | |
+| 30 | | | | | | | | | | |
+| 60 | | | | | | | | | | |
+| 100 | | | | | | | | | | |
+| 150 | | | | | | | | | | |
 | 200 | | | | | | | | | | |
+| 300 | | | | | | | | | | |
 | 400 | | | | | | | | | | |
-| 600 | | | | | | | | | | |
-| 800 | | | | | | | | | | |
-| 1200 | | | | | | | | | | |
 
-### Comparación
+### Comparación por nivel
+
+Mismos niveles en las dos pruebas:
+
+| Usuarios | RPS 1 réplica | RPS 3 réplicas | p95 1 réplica (ms) | p95 3 réplicas (ms) | Cumple 1 | Cumple 3 |
+|---:|---:|---:|---:|---:|:---:|:---:|
+| 10 | | | | | | |
+| 30 | | | | | | |
+| 60 | | | | | | |
+| 100 | | | | | | |
+| 150 | | | | | | |
+| 200 | | | | | | |
+| 300 | | | | | | |
+| 400 | | | | | | |
+
+Mientras ninguna configuración está saturada, el RPS debería ser casi igual en
+las dos (lo fija `wait_time`, no la API). La diferencia aparece cuando la de 1
+réplica se queda en su techo y la de 3 sigue subiendo.
+
+### Comparación de capacidad
 
 | Métrica | 1 réplica | 3 réplicas | Cambio |
 |---------|----------:|-----------:|-------:|
