@@ -136,8 +136,6 @@ Guarda las muestras en `stats/rep1.csv` y se deja corriendo.
 ./run_levels.sh 1 50 100 200 400 800
 ```
 
-Con los valores por defecto tarda unos 14 minutos:
-
 | Nivel | Rampa (20 usuarios/s) | Ventana medida | Pausa |
 |---:|---:|---:|---:|
 | 50 | 3 s | 120 s | 30 s |
