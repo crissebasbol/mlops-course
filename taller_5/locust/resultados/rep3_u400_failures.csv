@@ -1,0 +1,4 @@
+Method,Name,Error,Occurrences,First Seen,Last Seen
+POST,/predict,CatchResponseError('HTTP 500: <html>\r\n<head><title>500 Internal Server Error</title></head>\r\n<body>\r\n<center><h1>500 Internal Server Error</h1></center>\r\n<hr><center>nginx/1.27.5</center>\r\n</body>\r\n</html>\r\n'),277,2026-10-10T05:54:38Z,2026-10-10T05:54:48Z
+POST,/predict,CatchResponseError('HTTP 0: '),256,2026-10-10T05:53:45Z,2026-10-10T05:55:23Z
+POST,/predict,CatchResponseError('HTTP 502: <html>\r\n<head><title>502 Bad Gateway</title></head>\r\n<body>\r\n<center><h1>502 Bad Gateway</h1></center>\r\n<hr><center>nginx/1.27.5</center>\r\n</body>\r\n</html>\r\n'),6,2026-10-10T05:54:36Z,2026-10-10T05:54:37Z
