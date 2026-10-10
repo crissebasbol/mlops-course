@@ -47,9 +47,15 @@ Se pueden cambiar sin editar el script.
 
 ```bash
 ./run_levels.sh <replicas> <usuarios> [usuarios ...]
-./run_levels.sh 1 50 100 200 400 800
-./run_levels.sh 3 200 400 600 800 1200
+./run_levels.sh 1 10 30 60 100 150 200 300 400
+./run_levels.sh 3 10 30 60 100 150 200 300 400
 ```
+
+Las dos pruebas usan los mismos niveles para poder compararlas nivel por nivel.
+Cada fila de `resultados/resumen.csv` incluye `inicio_epoch` y `fin_epoch`, la
+ventana estable del nivel, que `../scripts/stats_por_nivel.sh` usa para cruzarla
+con `docker stats` de la VM de la API. Si `resumen.csv` tiene el formato anterior
+(sin esas columnas), el script se detiene y pide moverlo o borrarlo.
 
 El primer argumento solo sirve para nombrar los archivos (`rep1_...`,
 `rep3_...`).
