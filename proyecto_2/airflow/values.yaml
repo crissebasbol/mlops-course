@@ -54,9 +54,7 @@ scheduler:
     requests: {cpu: 500m, memory: 1536Mi}
     limits: {cpu: "2", memory: 4Gi}
   logGroomerSidecar:
-    resources:
-      requests: {cpu: 10m, memory: 32Mi}
-      limits: {cpu: 100m, memory: 128Mi}
+    enabled: false
 
 workers:
   persistence:
@@ -73,9 +71,7 @@ dagProcessor:
     requests: {cpu: 100m, memory: 512Mi}
     limits: {cpu: "1", memory: 1536Mi}
   logGroomerSidecar:
-    resources:
-      requests: {cpu: 10m, memory: 32Mi}
-      limits: {cpu: 100m, memory: 128Mi}
+    enabled: false
 
 triggerer:
   enabled: true
@@ -85,9 +81,7 @@ triggerer:
     requests: {cpu: 50m, memory: 384Mi}
     limits: {cpu: 500m, memory: 1Gi}
   logGroomerSidecar:
-    resources:
-      requests: {cpu: 10m, memory: 32Mi}
-      limits: {cpu: 100m, memory: 128Mi}
+    enabled: false
 
 # Sin hooks de Helm: con `helm --wait` los hooks post-install nunca corren (los pods
 # esperan las migraciones y Helm espera a los pods).
