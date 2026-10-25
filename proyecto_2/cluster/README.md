@@ -58,7 +58,9 @@ sudo systemctl enable --now nftables
 ```bash
 curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
 sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
-curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+curl -fsSL https://get.helm.sh/helm-v3.18.4-linux-amd64.tar.gz | tar xz
+sudo install -o root -g root -m 0755 linux-amd64/helm /usr/local/bin/helm
+helm version
 
 mkdir -p ~/.kube
 vim ~/.kube/config        # pegar el KubeConfig del clúster mlops (Download KubeConfig)
@@ -68,10 +70,12 @@ kubectl get nodes -o wide
 
 ## 5. StorageClass por defecto y labels
 
-RKE2 no trae provisionador de volúmenes. Se usa `local-path-provisioner` de Rancher:
+RKE2 no trae provisionador de volúmenes. Se usa `local-path-provisioner` de Rancher (v0.0.32).
+El manifiesto está en esta carpeta porque la red de la universidad bloquea `raw.githubusercontent.com`:
 
 ```bash
-kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.32/deploy/local-path-storage.yaml
+kubectl apply -f proyecto_2/cluster/local-path-storage.yaml
+kubectl -n local-path-storage get pods
 kubectl patch storageclass local-path -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
 kubectl get storageclass
 ```
