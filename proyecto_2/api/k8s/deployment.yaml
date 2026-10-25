@@ -22,7 +22,7 @@ spec:
         mlops/tier: serving
       containers:
         - name: api
-          image: crissebasbol/proyecto2-api:1.0.0
+          image: crissebasbol/proyecto2-api:1.0.1
           imagePullPolicy: Always
           ports:
             - name: http

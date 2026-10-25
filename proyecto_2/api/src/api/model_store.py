@@ -42,6 +42,9 @@ class ModelStore:
             return False
 
         model = mlflow.sklearn.load_model(f"models:/{self.name}/{version}")
+        # Una fila por peticion: repartirla en hilos cuesta mas que calcularla (pod de 1 CPU).
+        if "n_jobs" in model.named_steps["model"].get_params():
+            model.set_params(model__n_jobs=1)
         run = self.client.get_run(mv.run_id)
         info = {
             "model_name": self.name,

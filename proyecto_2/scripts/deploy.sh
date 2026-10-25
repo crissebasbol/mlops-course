@@ -20,6 +20,7 @@ done
 helm repo add apache-airflow https://airflow.apache.org >/dev/null 2>&1 || true
 helm repo update apache-airflow
 helm upgrade --install airflow apache-airflow/airflow \
+  --version 1.22.0 \
   --namespace "$NS" \
   -f airflow/values.yaml \
   --wait --timeout 20m
