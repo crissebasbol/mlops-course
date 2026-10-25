@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mlflow
+  labels:
+    app: mlflow
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mlflow
+  template:
+    metadata:
+      labels:
+        app: mlflow
+    spec:
+      nodeSelector:
+        mlops/tier: data
+      initContainers:
+        - name: wait-postgres
+          image: postgres:16
+          command: ["sh", "-c", "until pg_isready -h postgres-mlflow -U mlflow; do echo esperando postgres-mlflow; sleep 3; done"]
+          resources:
+            requests: {cpu: 10m, memory: 16Mi}
+            limits: {cpu: 100m, memory: 64Mi}
+      containers:
+        - name: mlflow
+          image: crissebasbol/proyecto2-mlflow:1.0.0
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5000
+          envFrom:
+            - configMapRef:
+                name: mlflow
+          env:
+            - name: POSTGRES_MLFLOW_PASSWORD
+              valueFrom:
+                secretKeyRef: {name: postgres-mlflow, key: POSTGRES_PASSWORD}
+            - name: BACKEND_STORE_URI
+              value: postgresql+psycopg://mlflow:$(POSTGRES_MLFLOW_PASSWORD)@postgres-mlflow:5432/mlflow
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef: {name: minio-credentials, key: MINIO_ROOT_USER}
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef: {name: minio-credentials, key: MINIO_ROOT_PASSWORD}
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            failureThreshold: 6

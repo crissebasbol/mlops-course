@@ -1,0 +1,96 @@
+executor: LocalExecutor
+
+images:
+  airflow:
+    repository: crissebasbol/proyecto2-airflow
+    tag: "1.0.0"
+    pullPolicy: Always
+
+nodeSelector:
+  mlops/tier: data
+
+env:
+  - name: AIRFLOW__CORE__LOAD_EXAMPLES
+    value: "False"
+  - name: AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION
+    value: "False"
+  - name: AIRFLOW__CORE__PARALLELISM
+    value: "8"
+
+extraEnvFrom: |
+  - configMapRef:
+      name: airflow-pipeline
+
+# Credenciales tomadas de los Secrets de database/ y minio/.
+secret:
+  - envName: DATA_DB_PASSWORD
+    secretName: postgres-data
+    secretKey: AIRFLOW_ETL_PASSWORD
+  - envName: MINIO_ACCESS_KEY
+    secretName: minio-credentials
+    secretKey: MINIO_ROOT_USER
+  - envName: MINIO_SECRET_KEY
+    secretName: minio-credentials
+    secretKey: MINIO_ROOT_PASSWORD
+
+# Metadatos de Airflow en postgres-airflow (airflow/k8s), no en el subchart.
+postgresql:
+  enabled: false
+data:
+  metadataSecretName: airflow-metadata
+
+redis:
+  enabled: false
+statsd:
+  enabled: false
+
+# Con LocalExecutor las tareas (y el entrenamiento) corren dentro del scheduler.
+scheduler:
+  resources:
+    requests: {cpu: 500m, memory: 1Gi}
+    limits: {cpu: "2", memory: 3Gi}
+  logGroomerSidecar:
+    resources:
+      requests: {cpu: 10m, memory: 32Mi}
+      limits: {cpu: 100m, memory: 128Mi}
+
+workers:
+  persistence:
+    enabled: true
+    size: 5Gi
+
+apiServer:
+  resources:
+    requests: {cpu: 250m, memory: 512Mi}
+    limits: {cpu: "1", memory: 1Gi}
+
+dagProcessor:
+  resources:
+    requests: {cpu: 100m, memory: 384Mi}
+    limits: {cpu: 500m, memory: 768Mi}
+  logGroomerSidecar:
+    resources:
+      requests: {cpu: 10m, memory: 32Mi}
+      limits: {cpu: 100m, memory: 128Mi}
+
+triggerer:
+  enabled: true
+  persistence:
+    enabled: false
+  resources:
+    requests: {cpu: 50m, memory: 256Mi}
+    limits: {cpu: 500m, memory: 512Mi}
+  logGroomerSidecar:
+    resources:
+      requests: {cpu: 10m, memory: 32Mi}
+      limits: {cpu: 100m, memory: 128Mi}
+
+migrateDatabaseJob:
+  resources:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {cpu: 500m, memory: 1Gi}
+
+createUserJob:
+  resources:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {cpu: 500m, memory: 1Gi}

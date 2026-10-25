@@ -1,0 +1,15 @@
+# Red de seguridad: contenedores sin resources (p. ej. init containers del chart
+# de Airflow) reciben estos requests/limits por defecto.
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: default-resources
+spec:
+  limits:
+    - type: Container
+      defaultRequest:
+        cpu: 50m
+        memory: 64Mi
+      default:
+        cpu: 500m
+        memory: 512Mi

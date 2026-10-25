@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: proyecto2
+
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: proyecto2
+
+resources:
+  - namespace.yaml
+  - limitrange.yaml
+  - database
+  - minio
+  - mlflow
+  - airflow
+  - api
+  - streamlit
+  - locust
+  - observability

@@ -1,0 +1,11 @@
+[project]
+name = "locust-proyecto2"
+version = "1.0.0"
+description = "Generador de carga con Locust para la API de inferencia de readmision"
+authors = [
+    { name = "Cristhian Bolanos", email = "crissebasbol@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "locust",
+]
