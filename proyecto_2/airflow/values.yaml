@@ -1,5 +1,7 @@
 executor: LocalExecutor
 
+airflowVersion: "3.1.8"
+
 images:
   airflow:
     repository: crissebasbol/proyecto2-airflow
