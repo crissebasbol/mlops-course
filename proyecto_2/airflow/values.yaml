@@ -15,7 +15,7 @@ env:
   - name: AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION
     value: "False"
   - name: AIRFLOW__CORE__PARALLELISM
-    value: "8"
+    value: "4"
   - name: AIRFLOW__API__WORKERS
     value: "2"
 
@@ -49,8 +49,8 @@ statsd:
 # Con LocalExecutor las tareas (y el entrenamiento) corren dentro del scheduler.
 scheduler:
   resources:
-    requests: {cpu: 500m, memory: 1Gi}
-    limits: {cpu: "2", memory: 3Gi}
+    requests: {cpu: 500m, memory: 1536Mi}
+    limits: {cpu: "2", memory: 4Gi}
   logGroomerSidecar:
     resources:
       requests: {cpu: 10m, memory: 32Mi}
@@ -68,8 +68,8 @@ apiServer:
 
 dagProcessor:
   resources:
-    requests: {cpu: 100m, memory: 384Mi}
-    limits: {cpu: 500m, memory: 768Mi}
+    requests: {cpu: 100m, memory: 512Mi}
+    limits: {cpu: "1", memory: 1536Mi}
   logGroomerSidecar:
     resources:
       requests: {cpu: 10m, memory: 32Mi}
@@ -80,8 +80,8 @@ triggerer:
   persistence:
     enabled: false
   resources:
-    requests: {cpu: 50m, memory: 256Mi}
-    limits: {cpu: 500m, memory: 512Mi}
+    requests: {cpu: 50m, memory: 384Mi}
+    limits: {cpu: 500m, memory: 1Gi}
   logGroomerSidecar:
     resources:
       requests: {cpu: 10m, memory: 32Mi}
