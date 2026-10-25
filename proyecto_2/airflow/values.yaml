@@ -87,12 +87,18 @@ triggerer:
       requests: {cpu: 10m, memory: 32Mi}
       limits: {cpu: 100m, memory: 128Mi}
 
+# Sin hooks de Helm: con `helm --wait` los hooks post-install nunca corren (los pods
+# esperan las migraciones y Helm espera a los pods).
 migrateDatabaseJob:
+  useHelmHooks: false
+  applyCustomEnv: false
   resources:
     requests: {cpu: 100m, memory: 256Mi}
     limits: {cpu: 500m, memory: 1Gi}
 
 createUserJob:
+  useHelmHooks: false
+  applyCustomEnv: false
   resources:
     requests: {cpu: 100m, memory: 256Mi}
     limits: {cpu: 500m, memory: 1Gi}
