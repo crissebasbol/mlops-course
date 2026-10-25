@@ -1,6 +1,6 @@
 [project]
 name = "api"
-version = "1.0.0"
+version = "1.0.1"
 description = "API de inferencia de readmision de pacientes diabeticos que carga el modelo champion desde MLflow"
 authors = [
     { name = "Cristhian Bolanos", email = "crissebasbol@gmail.com" }

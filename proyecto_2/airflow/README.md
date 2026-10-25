@@ -15,7 +15,7 @@ Los metadatos van en `postgres-airflow` en vez del subchart de Postgres, para co
 versión, recursos y volumen igual que las otras bases.
 
 ```bash
-helm upgrade --install airflow apache-airflow/airflow -n proyecto2 -f airflow/values.yaml --wait --timeout 20m
+helm upgrade --install airflow apache-airflow/airflow --version 1.22.0 -n proyecto2 -f airflow/values.yaml --wait --timeout 20m
 kubectl -n proyecto2 logs statefulset/airflow-scheduler -c scheduler -f
 ```
 
