@@ -1,0 +1,12 @@
+[project]
+name = "streamlit-app"
+version = "1.0.0"
+description = "Interfaz grafica que consume la API de inferencia de readmision"
+authors = [
+    { name = "Cristhian Bolanos", email = "crissebasbol@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "streamlit",
+    "requests",
+]

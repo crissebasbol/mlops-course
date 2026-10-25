@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: locust
+  labels:
+    app: locust
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: locust
+  template:
+    metadata:
+      labels:
+        app: locust
+    spec:
+      # En el nodo data para no competir por CPU con la API (nodo serving).
+      nodeSelector:
+        mlops/tier: data
+      containers:
+        - name: locust
+          image: crissebasbol/proyecto2-locust:1.0.0
+          imagePullPolicy: Always
+          args: ["--host", "http://api:8000"]
+          ports:
+            - name: web
+              containerPort: 8089
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: web
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: web
+            initialDelaySeconds: 20
+            periodSeconds: 20

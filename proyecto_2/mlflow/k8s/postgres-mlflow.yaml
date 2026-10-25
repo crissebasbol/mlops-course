@@ -1,0 +1,83 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-mlflow
+type: Opaque
+stringData:
+  POSTGRES_USER: mlflow
+  POSTGRES_PASSWORD: mlflow123
+  POSTGRES_DB: mlflow
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-mlflow
+  labels:
+    app: postgres-mlflow
+spec:
+  selector:
+    app: postgres-mlflow
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: 5432
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres-mlflow
+  labels:
+    app: postgres-mlflow
+spec:
+  serviceName: postgres-mlflow
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-mlflow
+  template:
+    metadata:
+      labels:
+        app: postgres-mlflow
+    spec:
+      nodeSelector:
+        mlops/tier: data
+      containers:
+        - name: postgres
+          image: postgres:16
+          ports:
+            - containerPort: 5432
+          env:
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          envFrom:
+            - secretRef:
+                name: postgres-mlflow
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          readinessProbe:
+            exec:
+              command: ["sh", "-c", "pg_isready -h 127.0.0.1 -U mlflow -d mlflow"]
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command: ["sh", "-c", "pg_isready -h 127.0.0.1 -U mlflow -d mlflow"]
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            failureThreshold: 6
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 2Gi

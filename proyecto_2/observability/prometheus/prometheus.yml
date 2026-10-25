@@ -1,0 +1,56 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # Cada replica de la API (pods con la anotacion prometheus.io/scrape=true).
+  - job_name: api
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names: [proyecto2]
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+        action: keep
+        regex: "true"
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+        action: replace
+        regex: (.+)
+        target_label: __metrics_path__
+      - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+        action: replace
+        regex: ([^:]+)(?::\d+)?;(\d+)
+        replacement: $1:$2
+        target_label: __address__
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        target_label: app
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
+      - source_labels: [__meta_kubernetes_pod_node_name]
+        target_label: node
+
+  # CPU y memoria por contenedor desde cAdvisor del kubelet de cada nodo.
+  - job_name: kubelet-cadvisor
+    scheme: https
+    metrics_path: /metrics/cadvisor
+    scrape_interval: 15s
+    tls_config:
+      insecure_skip_verify: true
+    authorization:
+      credentials_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+    kubernetes_sd_configs:
+      - role: node
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_node_name]
+        target_label: node
+    metric_relabel_configs:
+      - source_labels: [namespace]
+        action: keep
+        regex: proyecto2
+      - source_labels: [__name__]
+        action: keep
+        regex: container_(cpu_usage_seconds_total|memory_working_set_bytes|cpu_cfs_throttled_periods_total|cpu_cfs_periods_total|spec_memory_limit_bytes|spec_cpu_quota|spec_cpu_period)
+
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]

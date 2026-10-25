@@ -1,0 +1,7 @@
+mlflow-skinny==3.16.1
+skops
+scikit-learn==1.9.1
+pandas
+pyarrow
+minio==7.2.15
+requests
