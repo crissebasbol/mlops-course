@@ -283,6 +283,25 @@ en `inference.predictions`:
 
 ![Respuesta de /predict](images/11_api_predict.png)
 
+Cada llamada a `/predict` queda registrada en `inference.predictions`. Al terminar las pruebas de
+carga, la tabla tenía **50.445 inferencias**: las de Locust con 2 y 3 réplicas, más las de
+Streamlit y `/docs`.
+
+```bash
+kubectl -n proyecto2 exec -it postgres-data-0 -- psql -U postgres -d diabetes -c \
+  "SELECT count(*) AS inferencias, min(created_at), max(created_at) FROM inference.predictions;"
+```
+
+![Total de inferencias registradas](images/24_inferencias_total.png)
+
+Cada fila guarda lo que pide el enunciado: `request_id`, fecha y hora, entrada recibida (JSONB, en
+la columna `input`), predicción, probabilidad (y las de las tres clases), modelo, versión y alias,
+tiempo del modelo y la réplica que atendió. En estas filas, de los últimos segundos de la prueba
+con 300 usuarios, el tiempo del modelo (`ms`) sube a 430-770 ms por la contención de CPU que se
+analiza en la prueba de carga:
+
+![Últimas inferencias registradas](images/25_inferencias_filas.png)
+
 ### 8. Interfaz gráfica (Streamlit)
 
 En http://10.43.97.106:8007 la barra lateral muestra el modelo en producción (consultado a
@@ -296,9 +315,33 @@ la probabilidad, la versión del modelo y la latencia:
 
 ![Resultado en Streamlit](images/13_streamlit_resultado.png)
 
-### 9. Prueba de carga
+### 9. Observabilidad (Prometheus)
 
-UI de Locust en http://10.43.97.106:8010, o por niveles en modo headless (desde `.106`):
+En http://10.43.97.106:8009, **Status > Target health** muestra lo que recolecta Prometheus:
+
+- **`api`:** una entrada por réplica de la API (aquí 3, con la API escalada), descubiertas solas
+  con `kubernetes_sd_configs` gracias a la anotación `prometheus.io/scrape: "true"` de los pods.
+  Cada una lleva los labels `pod` y `node`, así Grafana puede separar las métricas por réplica.
+  Si se escala la API, las réplicas nuevas aparecen sin tocar la configuración.
+- **`kubelet-cadvisor`:** el kubelet de cada nodo (`nodo-data` y `nodo-serving`, puerto 10250),
+  del que salen la CPU, la memoria y el throttling por contenedor. Requiere los permisos del
+  ServiceAccount definido en `observability/prometheus/k8s/rbac.yaml`.
+- **`prometheus`:** sus propias métricas.
+
+Todos los targets están en `UP`:
+
+![Targets de Prometheus](images/23_prometheus_targets.png)
+
+### 10. Prueba de carga
+
+UI de Locust en http://10.43.97.106:8010. Locust corre como pod en `nodo-data` y apunta a
+`http://api:8000`, el Service que reparte entre las dos réplicas de `nodo-serving`. En la
+siguiente imagen, una prueba de humo con 10 usuarios: ~5,8 RPS (lo esperado con un `wait_time` de
+1 a 2,5 s por usuario), 0 % de fallos, p50 ~70 ms y p95 ~160 ms.
+
+![Locust con 10 usuarios](images/14_locust_ui.png)
+
+Para medir el límite se corre por niveles en modo headless (desde `.106`):
 
 ```bash
 cd locust
@@ -311,11 +354,123 @@ con usuarios, spawn rate, peticiones, exitosas, fallidas, latencia promedio, p50
 El punto de degradación es el primer nivel que no cumple. Mientras corre, el dashboard de
 Grafana (http://10.43.97.106:8008) muestra el efecto.
 
-Para comparar con más réplicas:
+#### Resultados con 2 réplicas (1 CPU y 1 Gi cada una)
+
+Spawn rate de 20 usuarios/s y 120 s estables por nivel (`locust/resultados/resumen.csv`):
+
+| Usuarios | RPS | Peticiones | Exitosas | Fallidas | Promedio | p50 | p95 | p99 | Cumple |
+|---|---|---|---|---|---|---|---|---|---|
+| 10 | 5,5 | 658 | 658 | 0 | 78 ms | 63 ms | 130 ms | 330 ms | sí |
+| 30 | 15,9 | 1.913 | 1.913 | 0 | 145 ms | 110 ms | 360 ms | 550 ms | sí |
+| 60 | 26,7 | 3.215 | 3.215 | 0 | 504 ms | 390 ms | 1,2 s | 1,6 s | no |
+| 100 | 28,7 | 3.456 | 3.456 | 0 | 1,7 s | 1,9 s | 3,1 s | 3,6 s | no |
+| 150 | 28,1 | 3.379 | 3.379 | 0 | 3,6 s | 3,7 s | 5,0 s | 5,4 s | no |
+| 200 | 29,9 | 3.592 | 3.592 | 0 | 4,9 s | 4,9 s | 6,3 s | 7,2 s | no |
+| 300 | 32,3 | 3.878 | 3.878 | 0 | 7,5 s | 7,3 s | 8,7 s | 18 s | no |
+
+Hasta 30 usuarios el sistema responde con holgura: el RPS crece en proporción a los usuarios y la
+latencia se mantiene en cientos de milisegundos. En Grafana, CPU baja y casi ninguna petición en
+cola:
+
+![Grafana con 30 usuarios](images/16_grafana_u30.png)
+
+**Punto de degradación: entre 30 y 60 usuarios.** Con 60 usuarios el RPS (26,7) ya está cerca
+del máximo y el p95 pasa de 360 ms a 1,2 s. Es el primer nivel que no cumple el criterio.
+
+![Grafana con 60 usuarios](images/17_grafana_u60.png)
+
+**Saturación: el techo es ~28-32 RPS.** De 60 a 300 usuarios (5 veces más) el RPS apenas sube de
+26,7 a 32,3 y la latencia promedio crece de 0,5 a 7,5 s. Con la API al tope, agregar usuarios no
+aumenta el throughput, solo alarga la fila: con 300 usuarios que esperan en promedio 1,75 s entre
+peticiones y 7,5 s de respuesta, 300 / (1,75 + 7,5) ≈ 32 RPS (ley de Little), justo lo medido.
+
+![Grafana con 300 usuarios](images/21_grafana_u300.png)
+
+**El cuello de botella es la CPU de los pods de la API**, como muestran los paneles de
+infraestructura con 300 usuarios:
+
+- **CPU por pod (cAdvisor):** cada réplica trabaja a 0,75-0,95 de su límite de 1 CPU, y el
+  throttling sube hasta ~13 %.
+- **Peticiones en curso:** llegan a ~130 por réplica, esperando CPU.
+- **Tiempo del modelo vs registro en BD:** el p95 de `predict_proba` sube de ~200 ms a ~2,4 s,
+  mientras el `INSERT` en Postgres se mantiene alrededor de 0,5 s. Las peticiones compiten por la
+  misma CPU para calcular el Random Forest; la base de datos no es el límite.
+- **Memoria:** estable en ~400 MiB por réplica, lejos del límite de 1 Gi. No es un problema de
+  memoria.
+
+![Infraestructura con 300 usuarios](images/21_grafana_u300_infra.png)
+
+El generador de carga no limita la prueba: corre en otro nodo y 32 RPS es muy poco para un
+proceso de Locust (maneja cientos); además, el throughput medido coincide con lo que predice la
+saturación de la API. **No hubo errores (0 %)** en ningún nivel: Locust no corta por timeout y
+la API siempre termina respondiendo bien, solo que más tarde. Con un cliente real que abandone a
+los 2-3 s, los fallos empezarían alrededor de los 100 usuarios.
+
+**Conclusión:** con 2 réplicas de 1 CPU, la API atiende con buena latencia hasta ~30 usuarios
+concurrentes (~16 RPS) y su capacidad máxima es ~28-32 RPS, unos 15 RPS por réplica (~65 ms de
+CPU por predicción). Para soportar más carga: más réplicas (o un HPA por CPU), más CPU por pod, o
+un modelo más liviano (menos árboles o menos profundidad).
+
+<details>
+<summary>Capturas de Grafana de todos los niveles</summary>
+
+| Nivel | Tráfico y latencia | Infraestructura |
+|---|---|---|
+| 10 usuarios | ![](images/15_grafana_u10.png) | |
+| 30 usuarios | ![](images/16_grafana_u30.png) | ![](images/16_grafana_u30_infra.png) |
+| 60 usuarios | ![](images/17_grafana_u60.png) | ![](images/17_grafana_u60_infra.png) |
+| 100 usuarios | ![](images/18_grafana_u100.png) | ![](images/18_grafana_u100_infra.png) |
+| 150 usuarios | ![](images/19_grafana_u150.png) | ![](images/19_grafana_u150_infra.png) |
+| 200 usuarios | ![](images/20_grafana_u200.png) | ![](images/20_grafana_u200_infra.png) |
+| 300 usuarios | ![](images/21_grafana_u300.png) | ![](images/21_grafana_u300_infra.png) |
+
+</details>
+
+#### Comparación: 2 contra 3 réplicas
+
+Para comprobar que el límite es la CPU por réplica, se escaló la API a 3 réplicas y se repitieron
+los mismos niveles. `nodo-serving` tiene ~4 cores, así que las 3 réplicas (1 CPU de límite cada
+una) caben sin que el nodo completo se vuelva el cuello de botella.
 
 ```bash
 kubectl -n proyecto2 scale deployment api --replicas=3
+./run_levels.sh 10 30 60 100 150 200 300
 ```
+
+| Usuarios | RPS (2 rép.) | RPS (3 rép.) | p95 (2 rép.) | p95 (3 rép.) | Promedio (2 rép.) | Promedio (3 rép.) |
+|---|---|---|---|---|---|---|
+| 10 | 5,5 | 5,6 | 130 ms | 120 ms | 78 ms | 66 ms |
+| 30 | 15,9 | 16,4 | 360 ms | 230 ms | 145 ms | 98 ms |
+| 60 | 26,7 | 30,2 | 1,2 s | 660 ms | 504 ms | 240 ms |
+| 100 | 28,7 | 40,9 | 3,1 s | 2,0 s | 1,7 s | 704 ms |
+| 150 | 28,1 | 42,7 | 5,0 s | 3,2 s | 3,6 s | 1,8 s |
+| 200 | 29,9 | 42,9 | 6,3 s | 4,2 s | 4,9 s | 2,9 s |
+| 300 | 32,3 | 42,5 | 8,7 s | 7,0 s | 7,5 s | 5,3 s |
+
+En ambos casos hubo 0 fallos en todos los niveles.
+
+- **El techo sube en proporción a las réplicas:** de ~28-32 RPS a **~42-43 RPS**, un 50 % más
+  con un 50 % más de réplicas. Cada réplica sigue atendiendo ~14 RPS. La API escala
+  horizontalmente y el límite es la CPU de cada pod.
+- **Mejor latencia en todos los niveles:** con 60 usuarios el p95 baja de 1,2 s a 660 ms, y con
+  100 usuarios el promedio pasa de 1,7 s a 0,7 s.
+- **El punto de degradación se mueve, pero no desaparece:** 30 usuarios cumplen en los dos casos
+  y 60 no, aunque con 3 réplicas queda mucho más cerca del criterio (660 ms frente a 1,2 s). Con
+  3 réplicas el límite cómodo está alrededor de 50 usuarios.
+- **La ley de Little vuelve a cuadrar:** 300 / (1,75 + 5,3) ≈ 42,5 RPS, lo medido.
+
+En Grafana (última hora) se ven las dos corridas: a la izquierda con 2 réplicas, techo en ~30
+req/s; a la derecha con 3, techo en ~43 req/s, la carga repartida entre tres series en
+"Solicitudes por segundo por réplica", y el panel "Réplicas reportando" en 3:
+
+![Grafana: 2 réplicas contra 3](images/22_grafana_2vs3.png)
+
+![Infraestructura: 2 réplicas contra 3](images/22_grafana_2vs3_infra.png)
+
+Con 3 réplicas cada pod sigue trabajando cerca de su límite de 1 CPU, y la memoria sigue estable
+en ~400 MiB. Para atender más usuarios con latencias de cientos de milisegundos haría falta seguir
+escalando (por ejemplo, un HPA que agregue réplicas cuando la CPU pase del 70 %) o bajar el costo
+de cada predicción.
 
 ## Decisiones técnicas
 
@@ -383,7 +538,3 @@ El dashboard **Proyecto 2 - API de inferencia** (`observability/grafana/dashboar
 tiene total de solicitudes, RPS, latencia promedio, p50/p95/p99, errores, tasa de error, CPU,
 memoria y throttling por pod (cAdvisor), predicciones por clase, tiempo del modelo vs tiempo del
 insert en Postgres y versión del modelo activa.
-
-## Evidencias
-
-Las capturas van en [`images/`](images).
