@@ -1,5 +1,9 @@
 # Proyecto 2
 
+**Link del Video**
+
+https://youtu.be/VgjvsUWyjcY?si=WHpB9iaNzUxSfEL7
+
 Arquitectura MLOps completa desplegada en un clúster **RKE2 de dos nodos administrado con
 Rancher**, para predecir la **readmisión hospitalaria de pacientes diabéticos**
 (dataset *Diabetes 130-US hospitals 1999-2008*, 101.766 encuentros) en tres clases:
