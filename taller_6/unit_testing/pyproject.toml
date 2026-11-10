@@ -1,0 +1,28 @@
+[project]
+name = "taller6-housing"
+version = "1.0.0"
+description = "Estimador de precio de vivienda con preprocesamiento y pruebas unitarias"
+authors = [
+    { name = "Cristhian Bolanos", email = "crissebasbol@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi==0.115.12",
+    "uvicorn==0.34.2",
+]
+
+[dependency-groups]
+dev = [
+    "anyio==4.9.0",
+    "httpx==0.28.1",
+    "pytest==8.3.5",
+    "pytest-cov==6.1.1",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-v --cov=. --cov-report=term-missing --cov-fail-under=90"
+
+[tool.coverage.run]
+omit = ["tests/*"]

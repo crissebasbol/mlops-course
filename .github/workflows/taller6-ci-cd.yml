@@ -1,0 +1,74 @@
+name: Taller 6 - CI Unit Tests + DockerHub Publish
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - "taller_6/unit_testing/**"
+      - ".github/workflows/taller6-ci-cd.yml"
+  pull_request:
+    branches:
+      - master
+    paths:
+      - "taller_6/unit_testing/**"
+      - ".github/workflows/taller6-ci-cd.yml"
+
+env:
+  PYTHON_VERSION: "3.13"
+  APP_PATH: "taller_6/unit_testing"
+  IMAGE_NAME: "crissebasbol/taller6-housing"
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ env.APP_PATH }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install dependencies
+        run: uv sync --group dev
+
+      - name: Run unit tests (cobertura mínima 90 %)
+        run: uv run pytest
+
+      - name: Coverage summary
+        if: success() || failure()
+        run: uv run coverage report --format=markdown >> "$GITHUB_STEP_SUMMARY"
+
+  publish-dockerhub:
+    needs: unit-tests
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ env.APP_PATH }}
+          push: true
+          tags: |
+            ${{ env.IMAGE_NAME }}:latest
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
