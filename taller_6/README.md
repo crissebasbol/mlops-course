@@ -423,16 +423,26 @@ Al abrir un PR hacia `master` con cambios en `taller_6/unit_testing/`, se
 ejecuta solo el job `unit-tests`. `publish-dockerhub` aparece como **skipped**
 porque el evento es `pull_request`.
 
-<!-- TODO imagen: images/12_pr_checks_ok.png - PR con el check "unit-tests" en verde -->
+En la siguiente imagen se ven los checks del PR: `unit-tests (pull_request)`
+en verde (11 s) y `publish-dockerhub (pull_request)` como **skipped**. El
+merge aparece bloqueado, pero no por las pruebas: la rama `master` ya exige
+al menos una revisión aprobada antes de hacer merge.
+
 ![PR checks ok](images/12_pr_checks_ok.png)
 
-En el detalle del run se ven las 36 pruebas en `PASSED` y el mensaje de
-cobertura, y en el resumen la tabla de cobertura al 100 %.
+En la siguiente imagen se ven los pasos del job `unit-tests`, todos en verde:
+`Set up uv`, `Install dependencies`, `Run unit tests (cobertura mínima 90 %)`
+y `Coverage summary`. Este último, expandido, muestra el comando que escribe
+la tabla de cobertura en el resumen del run y las variables del workflow
+(`APP_PATH`, `IMAGE_NAME`, `PYTHON_VERSION`).
 
-<!-- TODO imagen: images/13_unit_tests_job.png - log del job unit-tests con "36 passed" y "Required test coverage of 90% reached" -->
 ![unit-tests job](images/13_unit_tests_job.png)
 
-<!-- TODO imagen: images/14_coverage_summary.png - resumen del run con la tabla de cobertura en markdown -->
+En la siguiente imagen se ve el resumen del run: el grafo
+`unit-tests → publish-dockerhub` (este último omitido por ser un PR) y la
+tabla de cobertura generada por `coverage report --format=markdown`, con los
+cuatro módulos al 100 %.
+
 ![coverage summary](images/14_coverage_summary.png)
 
 ### 3. Merge a `master`: se publica la imagen
@@ -440,13 +450,31 @@ cobertura, y en el resumen la tabla de cobertura al 100 %.
 Al hacer merge del PR, el `push` a `master` vuelve a ejecutar `unit-tests` y,
 como pasa, se ejecuta `publish-dockerhub`.
 
-<!-- TODO imagen: images/15_publish_dockerhub_job.png - run en master con unit-tests y publish-dockerhub en verde -->
+Run del merge: https://github.com/crissebasbol/mlops-course/actions/runs/42750453707
+
+En la siguiente imagen se ve el run disparado por el `push` del commit
+`4eaf257` en `master`, con estado **Success** en 54 s: `unit-tests` (14 s)
+y luego `publish-dockerhub` (35 s), los dos en verde. Debajo está otra vez la
+tabla de cobertura al 100 %.
+
 ![publish job](images/15_publish_dockerhub_job.png)
+
+En la siguiente imagen se ve el resumen que deja `docker/build-push-action`:
+el build del contexto `taller_6/unit_testing` completado en 13 s, con
+`push: true` y los dos tags publicados, `latest` y el SHA completo del commit
+(`4eaf25767bb25386a2efdace7a6773c56e5606fe`).
+
+![docker build summary](images/15b_docker_build_summary.png)
 
 La imagen queda en Docker Hub con los tags `latest` y el SHA del commit:
 https://hub.docker.com/r/crissebasbol/taller6-housing/tags
 
-<!-- TODO imagen: images/16_dockerhub_tags.png - página de tags en Docker Hub con latest y el sha -->
+En la siguiente imagen se ve la página de tags del repositorio
+`crissebasbol/taller6-housing`: los tags `4eaf2576...` y `latest` publicados
+por `crissebasbol`, para `linux/amd64` y con 63 MB comprimidos. Los dos
+apuntan al mismo digest (`050be6c68e59`), es decir, son la misma imagen con
+dos nombres.
+
 ![dockerhub tags](images/16_dockerhub_tags.png)
 
 La imagen publicada es la misma de la actividad 1, así que se puede descargar
@@ -460,18 +488,23 @@ docker run --rm -p 8022:8000 crissebasbol/taller6-housing:latest \
 
 ### 4. Reto: una prueba que falla bloquea el merge
 
-Para que un check en rojo **impida** el merge hay que volverlo obligatorio. En
-`Settings > Branches > Add branch protection rule` (o `Settings > Rules > Rulesets`)
-sobre la rama `master`:
+Para que un check en rojo **impida** el merge hay que volverlo obligatorio:
 
 - activar **Require a pull request before merging**,
 - activar **Require status checks to pass before merging** y agregar el check `unit-tests`.
 
-El check `unit-tests` solo aparece en el buscador después de que el workflow
-se haya ejecutado al menos una vez.
+Se usó un **ruleset** (`Settings > Rules > Rulesets`) llamado `master`. En la
+siguiente imagen se ve que está en estado **Active** y sin nadie en la
+`Bypass list`, así que la regla aplica a todos, incluido el dueño del
+repositorio.
 
-<!-- TODO imagen: images/17_branch_protection.png - regla de protección de master con el status check unit-tests obligatorio -->
-![branch protection](images/17_branch_protection.png)
+![ruleset master](images/17a_ruleset_master.png)
+
+En la siguiente imagen se ve la opción **Require status checks to pass**
+activada, con `unit-tests` (de GitHub Actions) como check obligatorio. El
+nombre coincide con el `id` del job en el workflow.
+
+![ruleset status check](images/17b_ruleset_status_check.png)
 
 Luego se abre un PR con un cambio que rompe una prueba, por ejemplo bajar el
 precio por m² del estrato 4 en `model.py`:
@@ -488,37 +521,21 @@ El job `unit-tests` falla en `test_precio[caso_normal]`
 (`assert 432000000.0 == 480000000 ± 4.8e+02`) y el botón de merge queda
 bloqueado con el mensaje de que los checks requeridos no pasaron.
 
-<!-- TODO imagen: images/18_unit_tests_failed.png - log del job unit-tests con FAILED test_precio[caso_normal] y "1 failed, 35 passed" -->
+PR del reto: https://github.com/crissebasbol/mlops-course/pull/57
+
+En la siguiente imagen se ve el log del paso `Run unit tests (cobertura mínima 90 %)`
+en GitHub Actions: la cobertura sigue al 100 %, pero falla
+`tests/test_model.py::test_precio[caso_normal]` con el valor obtenido
+(`432000000.0`) contra el esperado (`480000000 ± 4.8e+02`). Termina con
+`1 failed, 35 passed` y `Error: Process completed with exit code 1.`, lo que
+marca el job en rojo.
+
 ![unit-tests failed](images/18_unit_tests_failed.png)
 
-<!-- TODO imagen: images/19_merge_blocked.png - PR con el check unit-tests en rojo y el merge bloqueado ("Merging is blocked" / "Required statuses must pass") -->
+En la siguiente imagen se ve el PR con la revisión **aprobada** (`Changes approved`),
+así que el único motivo del bloqueo es el check: `unit-tests (pull_request)`
+aparece en rojo con la etiqueta **Required**, `publish-dockerhub` como skipped,
+y el botón `Merge pull request` deshabilitado con el mensaje
+**"Merging is blocked due to failing merge requirements"**.
+
 ![merge blocked](images/19_merge_blocked.png)
-
-Al revertir el cambio en el mismo PR, `unit-tests` vuelve a verde y el merge
-se habilita.
-
-**Nota sobre `paths`:** como el workflow solo corre cuando cambia
-`taller_6/unit_testing/`, un PR que no toque esa carpeta nunca reporta el
-check `unit-tests`. Si el check es obligatorio para toda la rama `master`, ese
-PR queda esperando el check indefinidamente. Para el taller basta con activar
-la regla durante la demostración del reto; en un proyecto real se usaría un
-ruleset limitado a esa carpeta o un job que siempre reporte estado.
-
-## Cumplimiento de requisitos
-
-| Requisito                                    | Dónde                                                                    |
-|----------------------------------------------|--------------------------------------------------------------------------|
-| `app.py` con al menos 3 funciones de preprocesamiento | `app.py` + `preprocessing.py` (`clean_text`, `validate_range`, `transform_features`) |
-| Exponer en FastAPI y probar con `TestClient` | `/preprocess` y `/predict`; `tests/test_api.py`                          |
-| Aislar el modelo con un fixture              | `FakeModel` y `client` en `tests/conftest.py` (`dependency_overrides`)    |
-| Carpeta `tests/` con mínimo 6 pruebas        | 36 pruebas                                                               |
-| Al menos 1 caso de error con `pytest.raises` | 16 casos con errores propios en `test_preprocessing.py`                  |
-| `Dockerfile` que ejecute `pytest`            | `CMD ["pytest"]`                                                         |
-| Ejecución exitosa en contenedor              | Paso 2                                                                   |
-| Casos normales y de borde                    | límites 20/1000, `area_por_habitacion = 20`, barrio desconocido, tipos inválidos |
-| Cobertura mínima del 90 % (adicional)        | `pyproject.toml` (`--cov-fail-under=90`), evidencia en el paso 4        |
-| **Actividad 2:** `paths` y `APP_PATH` ajustados | `.github/workflows/taller6-ci-cd.yml`                                 |
-| `IMAGE_NAME` con usuario de Docker Hub       | `crissebasbol/taller6-housing`                                           |
-| PR ejecuta las pruebas (`unit-tests`)        | Actividad 2, paso 2                                                      |
-| Merge a `master` publica la imagen (`publish-dockerhub`) | Actividad 2, paso 3, tags `latest` y `<sha>`                  |
-| Reto: prueba fallida bloquea el merge        | Actividad 2, paso 4                                                      |
