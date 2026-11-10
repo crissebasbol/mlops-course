@@ -5,7 +5,8 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
 WORKDIR /app
 
 COPY pyproject.toml ./
-RUN uv pip install --system --no-cache -r pyproject.toml --group dev
+COPY ca-bundle.pem /tmp/ca-bundle.pem
+RUN SSL_CERT_FILE=/tmp/ca-bundle.pem uv pip install --system --no-cache -r pyproject.toml --group dev
 
 COPY . .
 
