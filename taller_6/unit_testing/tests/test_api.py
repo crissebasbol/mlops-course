@@ -1,7 +1,7 @@
 def test_health(client):
     response = client.get("/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+    assert response.json() == {"status": "ok2"}
 
 
 def test_preprocess_devuelve_features(client, vivienda_valida):

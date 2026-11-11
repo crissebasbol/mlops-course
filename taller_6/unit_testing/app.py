@@ -27,7 +27,7 @@ def preprocessing_error_handler(request: Request, exc: PreprocessingError) -> JS
 
 @app.get("/health")
 def health() -> dict:
-    return {"status": "ok"}
+    return {"status": "ok2"}
 
 
 @app.post("/preprocess")
