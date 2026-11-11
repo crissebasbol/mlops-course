@@ -1,0 +1,20 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: taller6-housing
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/crissebasbol/mlops-course.git
+    targetRevision: master
+    path: taller_6_argo/k8s
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: taller6
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

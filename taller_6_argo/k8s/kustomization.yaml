@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: taller6
+
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: taller6
+
+resources:
+  - namespace.yaml
+  - deployment.yaml
+  - service.yaml
+
+images:
+  - name: crissebasbol/taller6-housing
+    newTag: 6ddd6d6e5660e01d468ae97be9df72ed5bd3165f

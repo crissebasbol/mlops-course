@@ -72,3 +72,43 @@ jobs:
           tags: |
             ${{ env.IMAGE_NAME }}:latest
             ${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+  update-manifest:
+    needs: publish-dockerhub
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    concurrency:
+      group: taller6-update-manifest
+      cancel-in-progress: false
+    env:
+      KUSTOMIZATION: taller_6_argo/k8s/kustomization.yaml
+
+    steps:
+      - name: Checkout (deploy key)
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          ssh-key: ${{ secrets.DEPLOY_KEY }}
+
+      - name: Set image tag
+        run: |
+          sed -i -E "s/^( *newTag:).*/\1 ${GITHUB_SHA}/" "$KUSTOMIZATION"
+          grep -n "newTag" "$KUSTOMIZATION"
+
+      - name: Commit and push
+        run: |
+          if git diff --quiet; then
+            echo "El tag ya es ${GITHUB_SHA}"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "taller6: imagen ${GITHUB_SHA::7} [skip ci]"
+          for i in 1 2 3; do
+            git push origin HEAD:master && exit 0
+            git pull --rebase origin master
+          done
+          exit 1
+
+      - name: Summary
+        run: echo "Argo CD desplegará \`${IMAGE_NAME}:${GITHUB_SHA}\`" >> "$GITHUB_STEP_SUMMARY"
