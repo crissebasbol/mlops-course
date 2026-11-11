@@ -14,4 +14,4 @@ resources:
 
 images:
   - name: crissebasbol/taller6-housing
-    newTag: 6ddd6d6e5660e01d468ae97be9df72ed5bd3165f
+    newTag: ace65204bc0cba53ba132b9e9a1118a70730b37e
