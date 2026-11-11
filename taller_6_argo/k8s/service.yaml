@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: taller6-housing
+  labels:
+    app: taller6-housing
+spec:
+  selector:
+    app: taller6-housing
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http
