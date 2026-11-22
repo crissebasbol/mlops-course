@@ -6,7 +6,7 @@ Cada carpeta es un PR para el repo [`housing-price-mlops`](https://github.com/cr
 
 | PR | Carpeta | Responsable | Depende de | Estado |
 |---|---|---|---|---|
-| 00 | `00-cluster/` | Cristian Organista | - | **Primero**: scripts del clúster (PR en borrador mientras se monta el clúster en las VMs) |
+| 00 | - | Cristian Organista | - | Fusionado (scripts del clúster); el arreglo de descargas en `/tmp` va en un PR de Cristhian Bolaños |
 | 0 | - | Cristhian Bolaños | - | Fusionado (CODEOWNERS y plantilla de PR) |
 | 1 | - | Cristhian Bolaños | - | Fusionado (esquema y calidad) |
 | 2 | - | Fabián Ramírez | 1 | Fusionado (features y split) |
