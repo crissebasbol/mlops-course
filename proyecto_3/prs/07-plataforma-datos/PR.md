@@ -1,6 +1,6 @@
-# PR 7a: plataforma de datos (Cristian Organista)
+# PR 7a: plataforma de datos (Fabián Ramírez)
 
-Depende del PR 6 (ya fusionado). Puede abrirse ya. Después de fusionarlo, Cristhian Bolaños abre el PR 7b (validación de manifiestos en la CI y build de la imagen de MLflow).
+Depende del PR 6 (ya fusionado). Puede abrirse ya. Después de fusionarlo, Cristhian Bolaños abre el PR 7b (validación de manifiestos en la CI y build de la imagen de MLflow), y en la .106 se corre `bash scripts/create_secrets.sh` (después de `git switch master && git pull`) para crear los Secrets de MinIO y MLflow. Después de fusionarlo, Cristhian Bolaños abre el PR 7b (validación de manifiestos en la CI y build de la imagen de MLflow).
 
 Probado en local con Docker: MinIO con su script de setup (corrido dos veces, es idempotente), el Postgres de MLflow, la imagen de MLflow construida desde este Dockerfile y un modelo de `housing_ml` registrado, con alias `champion` y cargado por alias sin credenciales de MinIO. También se probaron los permisos de cada usuario de MinIO y se validaron los manifiestos con `kubeconform` (18 recursos válidos).
 
