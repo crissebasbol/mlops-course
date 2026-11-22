@@ -10,8 +10,8 @@ Cada carpeta es un PR para el repo [`housing-price-mlops`](https://github.com/cr
 | 1 | - | Cristhian Bolaños | - | Fusionado (esquema y calidad) |
 | 2 | - | Fabián Ramírez | 1 | Fusionado (features y split) |
 | 3 | - | Cristian Organista | 1 | Fusionado (drift y decisión) |
-| 4 | - | Cristhian Bolaños | 2 | En revisión (modelo y compuertas) |
-| 5 | `05-simulacion/` | Fabián Ramírez | 3 y 4 | Abrir cuando el 4 esté fusionado (el 3 ya lo está) |
+| 4 | - | Cristhian Bolaños | 2 | Fusionado (modelo y compuertas) |
+| 5 | `05-simulacion/` | Fabián Ramírez | 3 y 4 | Listo para abrir |
 | 6 | `06-base-de-datos/` | Cristian Organista | - | Listo para abrir |
 
 ## Preparar el entorno (una sola vez)
