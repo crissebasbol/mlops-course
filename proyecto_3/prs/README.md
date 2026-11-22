@@ -16,6 +16,7 @@ Cada carpeta es un PR para el repo [`housing-price-mlops`](https://github.com/cr
 | 6 | - | Cristian Organista | - | Fusionado (base de datos) |
 | 7a | `07-plataforma-datos/` | Fabián Ramírez | 6 | Listo para abrir |
 | 7b | - | Cristhian Bolaños | 7a | CI: validación de manifiestos y build de MLflow, después del 7a |
+| 8 | `08-argocd-apps/` | Cristian Organista | 7a y 7b | Apps de Argo CD; después de fusionar, aplicar la app raíz en la .106 |
 
 ## Preparar el entorno (una sola vez)
 

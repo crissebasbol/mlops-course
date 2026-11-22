@@ -65,4 +65,5 @@ git push -u origin feature/plataforma-datos
 - **¿Por qué el Job de MinIO es un hook `PostSync`?** Corre después de cada sincronización de Argo; como el script es idempotente (crea solo lo que falta), repetirlo no rompe nada y repara un usuario o una política borrados.
 - **¿Por qué el tag de la imagen está escrito en el `deployment.yaml`?** Así el manifiesto dice exactamente qué versión corre, y el CI lo actualiza en cada build (PR 7b).
 - **¿Por qué `Recreate` en la API de datos?** Su PVC es `ReadWriteOnce`: con `RollingUpdate`, el pod nuevo no podría montar el volumen mientras el viejo siga vivo.
+- **¿Por qué el namespace y el PVC de la API de datos tienen `Prune=false,Delete=false`?** El namespace guarda los Secrets creados a mano y los volúmenes con datos. Con esas opciones, Argo CD nunca los borra, aunque se borre la app o el archivo salga de Git.
 - **La imagen de MinIO no trae `grep`**: el script de setup usa solo comandos de shell (se encontró en la prueba local).
