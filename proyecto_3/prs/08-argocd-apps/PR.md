@@ -11,9 +11,12 @@ cd housing-price-mlops
 git switch master && git pull
 git switch -c feature/argocd-apps
 
-# copiar la carpeta argocd/ de este directorio sobre la raíz del repo
-# (agrega root.yaml, README.md y apps/; no toca argocd/install/)
+# copiar el contenido de este directorio sobre la raíz del repo:
+# argocd/ (agrega root.yaml, README.md y apps/; no toca argocd/install/),
+# namespace/namespace.yaml y data-api/k8s/pvc.yaml (reemplazan los actuales)
 
+git add namespace/namespace.yaml data-api/k8s/pvc.yaml
+git commit -m "Argo CD no borra el namespace ni el PVC de la API de datos"
 git add argocd/root.yaml argocd/apps argocd/README.md
 git commit -m "Apps de Argo CD: raíz y plataforma de datos"
 git push -u origin feature/argocd-apps
@@ -27,6 +30,7 @@ git push -u origin feature/argocd-apps
 - `argocd/apps/data-platform.yaml`: app `data-platform` que sincroniza `platform/` (namespace, PostgreSQL de datos, MinIO, MLflow y API de datos) en `housing-mlops`, con `automated`, `prune`, `selfHeal` y reintentos.
 - `argocd/apps/kustomization.yaml`: lista de apps (la CI la valida con `kubeconform`).
 - `argocd/README.md`: cómo funciona, cómo aplicar la app raíz y el ciclo GitOps de una imagen.
+- `namespace/namespace.yaml` y `data-api/k8s/pvc.yaml`: anotación `argocd.argoproj.io/sync-options: Prune=false,Delete=false`. El namespace guarda los Secrets creados a mano y los volúmenes con datos: Argo nunca los borra, aunque se borre la app o el archivo salga de Git.
 
 **Por qué**
 
