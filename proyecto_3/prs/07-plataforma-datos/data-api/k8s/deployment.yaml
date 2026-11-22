@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: data-api
+  labels:
+    app: data-api
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: data-api
+  template:
+    metadata:
+      labels:
+        app: data-api
+    spec:
+      nodeSelector:
+        mlops/tier: data
+      containers:
+        - name: data-api
+          image: cristiandiaz13/mlops-puj:data-api-pf-v2
+          ports:
+            - name: http
+              containerPort: 80
+          env:
+            - name: STATE_FILE
+              value: /var/lib/data-api/state.json
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 1536Mi
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          volumeMounts:
+            - name: state
+              mountPath: /var/lib/data-api
+      volumes:
+        - name: state
+          persistentVolumeClaim:
+            claimName: data-api-state

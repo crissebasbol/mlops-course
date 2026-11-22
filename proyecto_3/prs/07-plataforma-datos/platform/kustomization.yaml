@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: housing-mlops
+
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: housing-mlops
+    includeSelectors: false
+
+resources:
+  - ../namespace
+  - ../database
+  - ../minio
+  - ../mlflow
+  - ../data-api

@@ -1,0 +1,20 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - k8s/service.yaml
+  - k8s/statefulset.yaml
+  - k8s/job-setup.yaml
+
+configMapGenerator:
+  - name: minio-setup
+    files:
+      - setup.sh
+  - name: minio-policies
+    files:
+      - policies/mlflow-artifacts.json
+      - policies/airflow-data.json
+      - policies/locust-replay.json
+
+generatorOptions:
+  disableNameSuffixHash: true

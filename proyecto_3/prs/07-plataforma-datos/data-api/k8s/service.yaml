@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: data-api
+  labels:
+    app: data-api
+spec:
+  selector:
+    app: data-api
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
