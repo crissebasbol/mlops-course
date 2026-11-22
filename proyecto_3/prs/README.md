@@ -14,7 +14,8 @@ Cada carpeta es un PR para el repo [`housing-price-mlops`](https://github.com/cr
 | 4 | - | Cristhian Bolaños | 2 | Fusionado (modelo y compuertas) |
 | 5 | - | Fabián Ramírez | 3 y 4 | Fusionado (simulación) |
 | 6 | - | Cristian Organista | - | Fusionado (base de datos) |
-| 7 | `07-plataforma-datos/` | Por definir | 6 | Listo para abrir |
+| 7a | `07-plataforma-datos/` | Cristian Organista | 6 | Listo para abrir |
+| 7b | - | Cristhian Bolaños | 7a | CI: validación de manifiestos y build de MLflow, después del 7a |
 
 ## Preparar el entorno (una sola vez)
 
