@@ -60,6 +60,14 @@ Y seguir `cluster/README.md` en orden:
 
 **Capturas para el README** (sin contraseñas ni tokens): clúster `Active` en Rancher, salida de `bootstrap.sh` (nodos con labels y pods de Argo `Running`), `nettest.sh`.
 
+## Arreglos encontrados al ejecutar
+
+Cada arreglo va como commit en la rama `feature/cluster` (copiar el archivo actualizado de esta carpeta):
+
+| # | Problema | Arreglo | Commit sugerido |
+|---|---|---|---|
+| 1 | `curl -o argocd` falla con `(23) Failure writing output to destination` dentro del repo: ya existe la carpeta `argocd/` | `cluster/README.md`, paso 5: las descargas de `kubectl`, `helm` y `argocd` van a `/tmp` | `Descargas del paso 5 en /tmp` |
+
 ## Texto del PR
 
 **Título:** `Scripts para montar el clúster`

@@ -73,13 +73,18 @@ sudo ./cluster/prepare_node.sh nodo-serving    # en la .92
 
 Si no están instalados:
 
+Se descargan en `/tmp`: dentro del repo ya existe una carpeta `argocd/` y `curl -o argocd` fallaría con `(23) Failure writing output to destination`.
+
 ```bash
-curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl && rm kubectl
-curl -fsSL https://get.helm.sh/helm-v3.18.4-linux-amd64.tar.gz | tar xz
-sudo install -o root -g root -m 0755 linux-amd64/helm /usr/local/bin/helm && rm -rf linux-amd64
-curl -sSL -o argocd https://github.com/argoproj/argo-cd/releases/download/v3.6.1/argocd-linux-amd64
-sudo install -m 0555 argocd /usr/local/bin/argocd && rm argocd
+cd /tmp
+curl -sSL -o /tmp/kubectl "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+sudo install -o root -g root -m 0755 /tmp/kubectl /usr/local/bin/kubectl && rm /tmp/kubectl
+curl -fsSL https://get.helm.sh/helm-v3.18.4-linux-amd64.tar.gz | tar xz -C /tmp
+sudo install -o root -g root -m 0755 /tmp/linux-amd64/helm /usr/local/bin/helm && rm -rf /tmp/linux-amd64
+curl -sSL -o /tmp/argocd https://github.com/argoproj/argo-cd/releases/download/v3.6.1/argocd-linux-amd64
+sudo install -m 0555 /tmp/argocd /usr/local/bin/argocd && rm /tmp/argocd
+kubectl version --client && helm version && argocd version --client
+cd ~/housing-price-mlops
 ```
 
 En Rancher, clúster `housing` > **Download KubeConfig**; pegarlo en `~/.kube/config` de la .106 (`chmod 600`). El contexto se llama `housing`. **Ese archivo nunca va a Git.**
