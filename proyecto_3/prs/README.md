@@ -15,8 +15,8 @@ Cada carpeta es un PR para el repo [`housing-price-mlops`](https://github.com/cr
 | 5 | - | Fabián Ramírez | 3 y 4 | Fusionado (simulación) |
 | 6 | - | Cristian Organista | - | Fusionado (base de datos) |
 | 7a | - | Fabián Ramírez | 6 | Fusionado (plataforma de datos) |
-| 7b | - | Cristhian Bolaños | 7a | Rama `feature/ci-imagenes` subida; PR por abrir |
-| 8 | `08-argocd-apps/` | Cristian Organista | 7a y 7b | Apps de Argo CD; después de fusionar, aplicar la app raíz en la .106 |
+| 7b | - | Cristhian Bolaños | 7a | Fusionado: CI publica `housing-mlflow:sha-ea92f63` y actualiza el tag solo |
+| 8 | `08-argocd-apps/` | Cristian Organista | 7a y 7b (fusionados) | **Listo para abrir**; después de fusionar, aplicar la app raíz en la .106 |
 
 ## Preparar el entorno (una sola vez)
 
