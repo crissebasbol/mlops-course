@@ -1,4 +1,4 @@
-# PR 3: drift y decisión de entrenamiento (Cristian)
+# PR 3: drift y decisión de entrenamiento (Cristian Organista)
 
 Depende del PR 1 (ya fusionado). Puede abrirse en paralelo con el PR 2.
 

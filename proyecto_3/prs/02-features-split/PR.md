@@ -1,4 +1,4 @@
-# PR 2: features, huellas y split (Fabián)
+# PR 2: features, huellas y split (Fabián Ramírez)
 
 Depende del PR 1 (ya fusionado). Puede abrirse en paralelo con el PR 3.
 

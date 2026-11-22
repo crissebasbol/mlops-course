@@ -6,13 +6,13 @@ Cada carpeta es un PR para el repo [`housing-price-mlops`](https://github.com/cr
 
 | PR | Carpeta | Responsable | Depende de | Estado |
 |---|---|---|---|---|
-| 0 | - | Cristhian | - | Fusionado (CODEOWNERS y plantilla de PR) |
-| 1 | - | Cristhian | - | Fusionado (esquema y calidad) |
-| 2 | `02-features-split/` | Fabián | 1 | Listo para abrir |
-| 3 | `03-drift-decision/` | Cristian | 1 | Listo para abrir |
-| 4 | - | Cristhian | 2 | En preparación (modelo y compuertas) |
-| 5 | `05-simulacion/` | Fabián | 3 y 4 | Abrir cuando 3 y 4 estén fusionados |
-| 6 | `06-base-de-datos/` | Cristian | - | Listo para abrir |
+| 0 | - | Cristhian Bolaños | - | Fusionado (CODEOWNERS y plantilla de PR) |
+| 1 | - | Cristhian Bolaños | - | Fusionado (esquema y calidad) |
+| 2 | `02-features-split/` | Fabián Ramírez | 1 | Listo para abrir |
+| 3 | `03-drift-decision/` | Cristian Organista | 1 | Listo para abrir |
+| 4 | - | Cristhian Bolaños | 2 | En preparación (modelo y compuertas) |
+| 5 | `05-simulacion/` | Fabián Ramírez | 3 y 4 | Abrir cuando 3 y 4 estén fusionados |
+| 6 | `06-base-de-datos/` | Cristian Organista | - | Listo para abrir |
 
 ## Preparar el entorno (una sola vez)
 

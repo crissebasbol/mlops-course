@@ -1,4 +1,4 @@
-# PR 5: simulación offline de los lotes (Fabián)
+# PR 5: simulación offline de los lotes (Fabián Ramírez)
 
 Depende de los PRs 3 y 4. **Abrirlo cuando ambos estén fusionados en `master`** (si se abre antes, la CI falla porque faltan módulos).
 

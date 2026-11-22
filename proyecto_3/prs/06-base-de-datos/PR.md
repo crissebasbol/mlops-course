@@ -1,4 +1,4 @@
-# PR 6: base de datos RAW, CLEAN y auditoría (Cristian)
+# PR 6: base de datos RAW, CLEAN y auditoría (Cristian Organista)
 
 No depende de otros PRs. Puede abrirse ya.
 
