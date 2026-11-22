@@ -1,0 +1,52 @@
+# Secretos y credenciales
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+kubeconfig*
+*.kubeconfig
+.kube/
+
+# Datos y modelos (viven en MinIO y MLflow, nunca en Git)
+data/
+*.csv
+*.parquet
+*.feather
+*.json.gz
+*.pkl
+*.pickle
+*.joblib
+mlruns/
+mlartifacts/
+
+# Material del curso
+MLOPS_Proyecto_Final*.pdf
+evaluar-proyecto-final-mlops/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+*.egg-info/
+build/
+dist/
+.ipynb_checkpoints/
+
+# Locust y port-forwards
+locust/results/
+scripts/.port_forward/
+
+# Editores y sistema
+.idea/
+.vscode/
+.claude/
+.DS_Store
