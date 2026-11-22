@@ -2,6 +2,36 @@
 
 No depende de otros PRs. Puede abrirse ya.
 
+## Corrección del PR #6 (ya abierto)
+
+El PR #6 tiene dos cosas que arreglar antes de fusionar:
+
+1. **Ruta:** los archivos quedaron dentro de `housing_ml/` (`housing_ml/database/...` y `housing_ml/scripts/create_secrets.sh`). Van en la **raíz** del repo: `database/` y `scripts/create_secrets.sh`. También falta `.env.example`.
+2. **Aviso de GitGuardian:** es un falso positivo (no hay contraseñas en el código: `:'etl_pw'` es una variable de psql que toma el valor del Secret). Igual se reescribió `01_roles.sh` para que el SQL no tenga la forma `PASSWORD 'algo'`: ahora arma el comando con `format(... %L)` y lo ejecuta con `\gexec`. Se probó en Postgres 16 local, incluso con una contraseña que tiene comilla y espacio.
+
+```bash
+cd housing-price-mlops
+git switch feature/base-de-datos && git pull
+git switch master && git pull && git switch feature/base-de-datos && git merge master   # trae scripts/ del PR 5
+
+git mv housing_ml/database database
+git mv housing_ml/scripts/create_secrets.sh scripts/create_secrets.sh
+
+# copiar desde esta carpeta (06-base-de-datos/) sobre la raíz del repo:
+#   database/init/01_roles.sh  (versión nueva)
+#   .env.example               (agrega KUBE_CONTEXT)
+chmod +x scripts/create_secrets.sh database/init/01_roles.sh
+
+ls housing_ml          # debe quedar solo: pyproject.toml, src, tests
+uv run ruff check . && uv run pytest -q
+
+git add -A database scripts/create_secrets.sh .env.example housing_ml
+git commit -m "Base de datos en la raíz del repo y roles sin contraseñas en el SQL"
+git push
+```
+
+En la página del PR, en la sección "Files changed", deben aparecer solo `database/...`, `scripts/create_secrets.sh` y `.env.example`. Los dos avisos de GitGuardian quedan en el commit anterior: se marcan como **falso positivo** en el panel de GitGuardian (enlace "View secret" del comentario > *Ignore* > *False positive*), porque no hay ninguna credencial real que rotar.
+
 ## Pasos
 
 ```bash
