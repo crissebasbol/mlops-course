@@ -18,9 +18,10 @@ cd housing-price-mlops
 git switch master && git pull
 git switch -c feature/observabilidad
 
-# copiar observability/ (nuevo) y argocd/apps/observability.yaml (nuevo).
-# NO reemplazar argocd/apps/kustomization.yaml, argocd/README.md ni scripts/create_secrets.sh
-# (el PR 12 de Streamlit puede haberlos cambiado): agregar a mano lo que está en "Cambios a mano".
+# copiar todo el contenido de esta carpeta sobre la raíz del repo:
+# observability/ y argocd/apps/observability.yaml son nuevos; argocd/apps/kustomization.yaml,
+# argocd/README.md y scripts/create_secrets.sh reemplazan los actuales (son las versiones
+# completas de master con lo de este PR agregado)
 
 git add observability/prometheus
 git commit -m "Prometheus con la API, la API de datos y cAdvisor"
@@ -31,34 +32,6 @@ git commit -m "Secret de Grafana"
 git add argocd/apps/observability.yaml argocd/apps/kustomization.yaml argocd/README.md
 git commit -m "App de Argo CD para la observabilidad"
 git push -u origin feature/observabilidad
-```
-
-### Cambios a mano
-
-`argocd/apps/kustomization.yaml`, al final de `resources`:
-
-```yaml
-  - observability.yaml
-```
-
-`scripts/create_secrets.sh`, al final:
-
-```bash
-
-require GRAFANA_ADMIN_PASSWORD
-apply_secret grafana-admin --from-literal=password="$GRAFANA_ADMIN_PASSWORD"
-```
-
-`argocd/README.md`, debajo de la fila de `apps/serving.yaml`:
-
-```markdown
-| `apps/observability.yaml` | `observability` | `observability/`: Prometheus y Grafana con el dashboard "Housing API" en el nodo de serving |
-```
-
-y el párrafo de abajo queda así:
-
-```markdown
-Streamlit se agrega a `serving/` y Locust a `observability/`. Una app nueva es un archivo más en `apps/` (y en `apps/kustomization.yaml`); la app raíz la crea sola en la siguiente sincronización.
 ```
 
 ## Antes de fusionar: Secret de Grafana (en la .106)

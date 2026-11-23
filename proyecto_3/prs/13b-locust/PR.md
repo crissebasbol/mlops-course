@@ -23,7 +23,8 @@ cd housing-price-mlops
 git switch master && git pull
 git switch -c feature/locust
 
-# copiar locust/ (nuevo) y observability/kustomization.yaml (solo agrega "- ../locust")
+# copiar todo el contenido de esta carpeta sobre la raíz del repo: locust/ es nuevo y
+# observability/kustomization.yaml reemplaza el actual (el del 13a con "- ../locust" agregado)
 
 git add locust/locustfile.py locust/k8s locust/kustomization.yaml locust/README.md
 git commit -m "Locust con usuarios de predicción y replay"
