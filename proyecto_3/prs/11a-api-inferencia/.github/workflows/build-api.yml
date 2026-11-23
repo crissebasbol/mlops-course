@@ -1,0 +1,38 @@
+name: Build API
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - api/Dockerfile
+      - api/requirements.txt
+      - api/housing_api/**
+      - housing_ml/pyproject.toml
+      - housing_ml/src/**
+      - .github/workflows/build-api.yml
+      - .github/workflows/_build-push.yml
+  pull_request:
+    paths:
+      - api/Dockerfile
+      - api/requirements.txt
+      - api/housing_api/**
+      - housing_ml/pyproject.toml
+      - housing_ml/src/**
+      - .github/workflows/build-api.yml
+      - .github/workflows/_build-push.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  api:
+    uses: ./.github/workflows/_build-push.yml
+    with:
+      component: api
+      image: crissebasbol/housing-api
+      context: .
+      dockerfile: api/Dockerfile
+      manifest: api/k8s/deployment.yaml
+      yq_path: .spec.template.spec.containers[0].image
+    secrets: inherit

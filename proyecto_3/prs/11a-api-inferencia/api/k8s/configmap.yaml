@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: api
+data:
+  MODEL_NAME: housing-price-model
+  MLFLOW_TRACKING_URI: http://mlflow:5000
+  MLFLOW_ENABLE_PROXY_MULTIPART_DOWNLOAD: "false"
+  RELOAD_INTERVAL_SECONDS: "30"
+  SHADOW_ENABLED: "true"
+  DATA_DB_HOST: postgres-data
+  DATA_DB_NAME: housing
+  DATA_DB_USER: api_writer
+  OMP_NUM_THREADS: "1"
