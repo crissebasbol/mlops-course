@@ -20,8 +20,8 @@ Cada carpeta es un PR para el repo [`housing-price-mlops`](https://github.com/cr
 | 9 | - | Cristhian Bolaños | 7a | Fusionado (DAG de Airflow, imagen y prueba de punta a punta en Docker) |
 | 10a | - | Cristian Organista | 9 | Fusionado (#15): CI publica `housing-airflow:sha-1d29aa7` y actualiza el tag solo |
 | 10b | - | Cristian Organista | 10a | Fusionado (#16 y #17, que agregó `airflow/k8s` faltante): Airflow desplegado y lote 0 corrido |
-| 10c | - | Cristhian Bolaños | 10b | PR #18 abierto: G6 a 150 ms, avisos de skops, Jobs sin TTL, CI de rutas de Argo |
-| 11a | `11a-api-inferencia/` | Fabián Ramírez | 10b | Pendiente: API, pruebas, imagen y manifiestos (fuera de Argo) |
+| 10c | - | Cristhian Bolaños | 10b | Fusionado (#18): G6 a 150 ms, avisos de skops, Jobs sin TTL, CI de rutas de Argo, MLflow sin jobs de GenAI |
+| 11a | `11a-api-inferencia/` | Fabián Ramírez | 10b | PR #19 abierto: API, pruebas, imagen y manifiestos (fuera de Argo) |
 | 11b | `11b-despliegue-api/` | Fabián Ramírez | 11a y el commit del bot | Pendiente: `create_secrets.sh` en la .106 antes de fusionar (13 Secrets) |
 
 ## Preparar el entorno (una sola vez)
