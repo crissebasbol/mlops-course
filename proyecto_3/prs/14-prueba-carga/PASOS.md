@@ -1,6 +1,8 @@
-# Pasos del 23 nov: estado del pipeline, evidencias y prueba de carga
+# Pasos del 23 nov (tarde): prueba de carga antes y después del PR de capacidad
 
-Todo se corre en la **.106** (`ssh estudiante@10.43.97.106`), desde el clon del repo de entrega. No hay que crear ramas ni hacer commits: solo mirar, capturar y correr la prueba de carga.
+Todo se corre en la **.106** (`ssh estudiante@10.43.97.106`), desde el clon del repo de entrega. El orden importa: la línea base se mide **antes** de fusionar el PR `fix/carga-y-historial`, porque ese PR cambia la sombra de la API y hay que comparar el antes con el después.
+
+**Límite:** el PR se fusiona antes del **lunes 23 a las 23:59** (ventana de 72 h). Las pruebas de carga pueden seguir después.
 
 ## 0. Preparar la terminal
 
@@ -8,122 +10,100 @@ Todo se corre en la **.106** (`ssh estudiante@10.43.97.106`), desde el clon del 
 cd ~/housing-price-mlops
 git switch master && git pull
 kubectl config current-context          # housing
-./scripts/port_forward.sh status        # 8002 a 8011 deben estar en OK
+./scripts/port_forward.sh status        # 8002 a 8011 en OK; si no: ./scripts/port_forward.sh start
+curl -s http://10.43.97.106:8005/health; echo     # champion 4 y sombra 5
 ```
 
-Si algún puerto sale en FALLA: `./scripts/port_forward.sh start`.
+## 1. Por qué se rechazó la v5
 
-## 1. Estado del pipeline
-
-### 1.1 Qué modelo sirve la API y si hay sombra
+Tenía mejor MAPE que el champion (20,9 % frente a 28,3 %), así que la frenó otra compuerta:
 
 ```bash
-curl -s http://10.43.97.106:8005/health; echo
+kubectl -n housing-mlops exec postgres-data-0 -- psql -U postgres -d housing -c "SELECT ingestion_id, promotion_reason FROM audit.batch_runs WHERE ingestion_id = 6"
 ```
 
-| Campo | Qué significa |
-|---|---|
-| `champion_version` | Modelo que responde las predicciones (anoche quedó en 4) |
-| `shadow_version` | `null`: no hay sombra. Un número: cada predicción corre también el challenger, y la API consume más CPU por petición. Anotarlo, porque cambia la capacidad en la prueba de carga |
+Enviar la salida completa (va al README).
 
-### 1.2 Historia de los lotes
+## 2. Línea base de carga (antes de fusionar el PR)
 
-```bash
-kubectl -n housing-mlops exec postgres-data-0 -- psql -U postgres -d housing -c "
-SELECT ingestion_id AS ingreso, cycle AS ciclo, api_batch_number AS lote, outcome, final_status,
-       training_code, promotion_decision, candidate_version AS candidata,
-       round(mape_candidate::numeric, 4) AS mape_cand, round(mape_champion::numeric, 4) AS mape_champ,
-       champion_version_after AS champion_despues
-FROM audit.batch_runs ORDER BY ingestion_id"
-```
+Configuración actual: 2 réplicas de la API con 1 CPU cada una y **sombra en el 100 %** de las predicciones.
 
-Lo esperado:
+### 2.1 Antes de empezar
 
-| Ingreso | Ciclo | Lote | Resultado |
-|---|---|---|---|
-| 1 | 1 | 0 | Línea base rechazada por G6 (antes de recalibrarlo) |
-| 2 | 1 | 1 | Línea base promovida (v2) |
-| 3 | 1 | 2 | Entrena por señales, promovida (v3) |
-| 4 | 1 | 3 | No entrena: lote pequeño |
-| 5 | 1 | 4 | Entrena por drift, promovida (v4) |
-| 6 | 1 | 5 | Entrena; promovida o rechazada según las compuertas |
-| 7 | 1 | - | `end_of_data`: la API de datos se reinició |
-| 8 en adelante | 2 | 0, 1, ... | `duplicate`: monitoreo del champion, sin reentrenar |
+- Grafana (`http://10.43.97.106:8008`), dashboard **Housing API**, rango **Last 30 minutes**, refresco **10s**.
+- No usar la UI web de Locust (`:8010`) mientras corre el script.
 
-Si alguna fila tiene `final_status = failed`, revisar su `error` y avisar:
+### 2.2 Correr (unos 14 minutos)
 
 ```bash
-kubectl -n housing-mlops exec postgres-data-0 -- psql -U postgres -d housing -c "SELECT ingestion_id, error FROM audit.batch_runs WHERE final_status = 'failed'"
-```
-
-### 1.3 Recargas de la API
-
-```bash
-kubectl -n housing-mlops exec postgres-data-0 -- psql -U postgres -d housing -c "SELECT ts, action, from_version, to_version, actor FROM audit.model_actions ORDER BY ts"
-```
-
-Debe haber una fila `reload` por réplica cada vez que cambió el champion.
-
-## 2. Capturas pendientes (antes de la carga)
-
-Sin contraseñas ni tokens a la vista, y sin el aviso de "estás compartiendo pantalla".
-
-| # | Dónde | Qué capturar |
-|---|---|---|
-| 1 | Argo (`https://10.43.97.106:8006`), app `airflow`, botón **History and Rollback** | Lista de sincronizaciones con su commit (por ejemplo `sha-6ad5b83`): evidencia de que un cambio en Git redespliega |
-| 2 | Lo mismo en la app `serving` | Sincronizaciones de la API y de Streamlit |
-| 3 | Argo, vista de árbol de `housing-root` | Las 4 apps (`data-platform`, `airflow`, `serving`, `observability`) en *Synced/Healthy* |
-| 4 | Airflow (`:8002`), DAG `housing_pipeline`, vista **Grid** | Varias corridas con ramas distintas: promoción, rechazo, lote pequeño, fin de datos y duplicados |
-| 5 | Airflow, una corrida de duplicado, vista **Graph** | La rama `monitor_production_model` tomada y el resto saltado |
-| 6 | MLflow (`:8003`), **Models**, `housing-price-model` | Las versiones con sus alias (`champion`, `challenger`, `previous_champion`) |
-| 7 | Streamlit (`:8007`), **Historial de lotes** | La tabla y las gráficas con el ciclo 1 completo y el ciclo 2 |
-
-## 3. Prueba de carga (línea base, unos 20 minutos)
-
-### 3.1 Antes de empezar
-
-- Que la API tenga champion (paso 1.1). El script lo comprueba solo.
-- Abrir Grafana (`http://10.43.97.106:8008`), dashboard **Housing API**, rango **Last 30 minutes** y refresco **10s**.
-- No usar la UI web de Locust (`:8010`) durante la prueba: el script corre Locust aparte, dentro del pod.
-
-### 3.2 Correr
-
-Con `nohup` para que no se corte si se cae la sesión SSH:
-
-```bash
-cd ~/housing-price-mlops
-nohup ./locust/run_levels.sh > locust/resultados_run.log 2>&1 &
+nohup ./locust/run_levels.sh 10 25 50 100 > locust/resultados_run.log 2>&1 &
 tail -f locust/resultados_run.log        # Ctrl+C solo deja de mirar; la prueba sigue
 ```
 
-Corre 5 escalones: **10, 50, 100, 200 y 300 usuarios**, cada uno con una rampa corta, 3 minutos estables y 30 s de descanso. Al empezar cada escalón el log muestra una línea `== rep2_uN: ...`.
+Cada escalón tiene rampa, 3 minutos estables y 30 s de descanso. El log muestra `== rep2_uN: ...` al empezar cada uno.
 
-### 3.3 Capturas durante la prueba
+### 2.3 Capturas
 
-Al **final de cada escalón** (justo antes de que el log muestre el siguiente `==`), una captura de Grafana con estos paneles a la vista:
+Al **final de cada escalón** (antes del siguiente `==`), una captura de Grafana con:
 
-- Peticiones por segundo (total y por réplica).
-- Latencia de `/predict` p50, p95 y p99.
-- Tasa de error.
+- peticiones por segundo (total y por réplica);
+- latencia de `/predict` p50, p95 y p99;
+- tasa de error y peticiones en curso;
 - CPU, memoria y throttling de los pods de la API.
 
-Las más importantes son las de **100 y 300 usuarios**. Al terminar todo, una captura más del dashboard completo con los 5 escalones.
+Al terminar, una captura del dashboard completo con los 4 escalones.
 
-### 3.4 Al terminar
+### 2.4 Al terminar
 
 ```bash
 column -s, -t < locust/resultados/resumen.csv
-ls locust/resultados/
 kubectl -n housing-mlops top pod -l app=api
-kubectl -n housing-mlops get pods -l app=api      # RESTARTS en 0 (sin OOM)
+kubectl -n housing-mlops get pods -l app=api      # anotar los RESTARTS
 ```
 
-`resumen.csv` tiene una fila por escalón: RPS, peticiones, fallos, latencias p50, p95 y p99, y la columna `cumple` (menos de 1 % de fallos y p95 menor a 500 ms).
+## 3. Fusionar el PR `fix/carga-y-historial`
 
-## 4. Qué enviar a Cristhian
+En GitHub: aprobar y fusionar con **Create a merge commit**. Cambia tres cosas:
 
-1. La salida de los pasos 1.1, 1.2 y 1.3.
-2. El contenido de `resumen.csv` (paso 3.4) y la salida de `kubectl top`.
-3. Las capturas de la sección 2 y las de Grafana de la sección 3.
+- **Sombra en el 20 % del tráfico:** el replay siempre va en sombra.
+- **Sondas de salud con más margen:** `timeoutSeconds` de 5 s (readiness) y 10 s (liveness).
+- **Historial de Streamlit:** sin "None" y con el primer y el último ciclo por defecto.
 
-Con eso se escribe el análisis de carga del README: dónde se satura la API, por qué (CPU, throttling, sombra) y qué ajuste conviene. Si el ajuste es necesario, se repite un escalón para comparar antes y después.
+Esperar a que `Build API` y `Build Streamlit` terminen en verde y a que el bot haga sus dos commits (`Imagen api sha-...` e `Imagen streamlit sha-...`). Luego, en la .106:
+
+```bash
+git pull
+argocd app get serving --refresh | tail -8
+kubectl -n housing-mlops rollout status deploy/api
+kubectl -n housing-mlops get pods -l app=api -o yaml | grep "image: crissebasbol"
+curl -s http://10.43.97.106:8005/model-info | python3 -m json.tool | grep -E "shadow_sample_rate|\"version\""
+```
+
+Esperado: imagen nueva en las 2 réplicas y `"shadow_sample_rate": 0.2`. En Streamlit (`:8007`), el historial sin "None".
+
+**Capturas:** el `argocd app get serving` con la sincronización y la página Historial de lotes ya corregida.
+
+## 4. Segunda corrida (después del PR)
+
+Los mismos escalones, para comparar:
+
+```bash
+nohup ./locust/run_levels.sh 10 25 50 100 > locust/resultados_run2.log 2>&1 &
+tail -f locust/resultados_run2.log
+```
+
+Las mismas capturas de Grafana de la sección 2.3. Al terminar:
+
+```bash
+column -s, -t < locust/resultados/resumen.csv     # ya tiene las filas de las dos corridas
+kubectl -n housing-mlops top pod -l app=api
+kubectl -n housing-mlops get pods -l app=api
+```
+
+## 5. Qué enviar a Cristhian
+
+1. La salida de la sección 1 (razón del rechazo de la v5).
+2. El `resumen.csv` con las dos corridas y las salidas de `kubectl top` y `get pods` de cada una.
+3. Las capturas de Grafana de las dos corridas y las de la sección 3.
+
+Con eso se escribe el análisis de carga del README: dónde se satura la API, por qué (CPU por predicción, sombra, throttling) y cuánto mejora con el ajuste.
