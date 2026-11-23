@@ -27,6 +27,7 @@ Cada carpeta es un PR para el repo [`housing-price-mlops`](https://github.com/cr
 | 12b | - | Cristhian Bolaños | 12a | Fusionado: Streamlit desplegado en `:8007` |
 | 13a | - | Fabián Ramírez | 11b | Fusionado: Prometheus y Grafana en la app `observability` |
 | 13b | - | Fabián Ramírez | 13a | Fusionado (#24): Locust arriba; falta correr `run_levels.sh` |
+| 14 | `14-prueba-carga/` | Todos | 13b | Pasos del 23 nov (sin PR): estado del pipeline, capturas pendientes y `run_levels.sh` |
 
 ## Preparar el entorno (una sola vez)
 
