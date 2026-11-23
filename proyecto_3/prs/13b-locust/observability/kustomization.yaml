@@ -1,0 +1,29 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: housing-mlops
+
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: housing-mlops
+    includeSelectors: false
+
+resources:
+  - prometheus/k8s/rbac.yaml
+  - prometheus/k8s/deployment.yaml
+  - prometheus/k8s/service.yaml
+  - grafana/k8s/dashboard-configmap.yaml
+  - grafana/k8s/deployment.yaml
+  - grafana/k8s/service.yaml
+  - ../locust
+
+configMapGenerator:
+  - name: prometheus-config
+    files:
+      - prometheus/prometheus.yml
+  - name: grafana-datasources
+    files:
+      - grafana/provisioning/datasources.yml
+  - name: grafana-dashboard-provider
+    files:
+      - grafana/provisioning/dashboards.yml

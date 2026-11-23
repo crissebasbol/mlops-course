@@ -23,6 +23,9 @@ Cada carpeta es un PR para el repo [`housing-price-mlops`](https://github.com/cr
 | 10c | - | Cristhian Bolaños | 10b | Fusionado (#18): G6 a 150 ms, avisos de skops, Jobs sin TTL, CI de rutas de Argo, MLflow sin jobs de GenAI |
 | 11a | - | Fabián Ramírez | 10b | Fusionado (#19), bot `sha-764d438`: API, pruebas, imagen y manifiestos (fuera de Argo) |
 | 11b | - | Fabián Ramírez | 11a | Fusionado (#20): app `serving` *Synced/Healthy*, 2 réplicas en `nodo-serving`, sin champion todavía |
+| 12a | - | Cristhian Bolaños | 11b | Push hecho (`feature/streamlit`): interfaz Streamlit, imagen y manifiestos fuera de Argo |
+| 13a | `13a-observabilidad/` | Fabián Ramírez | 11b | Pendiente: Prometheus y Grafana (app `observability`); `create_secrets.sh` en la .106 antes de fusionar (14 Secrets) |
+| 13b | `13b-locust/` | Fabián Ramírez | 13a y la API con champion | Pendiente: Locust en la misma app y `run_levels.sh` |
 
 ## Preparar el entorno (una sola vez)
 
