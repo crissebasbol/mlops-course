@@ -1,0 +1,122 @@
+executor: LocalExecutor
+
+airflowVersion: "3.1.8"
+
+images:
+  airflow:
+    repository: crissebasbol/housing-airflow
+    tag: bootstrap
+    pullPolicy: IfNotPresent
+
+nodeSelector:
+  mlops/tier: data
+
+env:
+  - name: AIRFLOW__CORE__LOAD_EXAMPLES
+    value: "False"
+  - name: AIRFLOW__CORE__PARALLELISM
+    value: "4"
+  - name: AIRFLOW__API__WORKERS
+    value: "2"
+  - name: OMP_NUM_THREADS
+    value: "2"
+
+extraEnvFrom: |
+  - configMapRef:
+      name: airflow-pipeline
+
+secret:
+  - envName: DATA_DB_PASSWORD
+    secretName: postgres-data
+    secretKey: AIRFLOW_ETL_PASSWORD
+  - envName: AWS_ACCESS_KEY_ID
+    secretName: minio-airflow
+    secretKey: AWS_ACCESS_KEY_ID
+  - envName: AWS_SECRET_ACCESS_KEY
+    secretName: minio-airflow
+    secretKey: AWS_SECRET_ACCESS_KEY
+
+# Claves y conexión desde Secrets estables (scripts/create_secrets.sh). Si el chart las generara,
+# Argo CD vería claves aleatorias nuevas en cada renderizado y reiniciaría Airflow sin fin.
+data:
+  metadataSecretName: airflow-metadata
+fernetKeySecretName: airflow-fernet-key
+apiSecretKeySecretName: airflow-api-secret-key
+jwtSecretName: airflow-jwt-secret
+
+postgresql:
+  enabled: false
+redis:
+  enabled: false
+statsd:
+  enabled: false
+pgbouncer:
+  enabled: false
+
+# Con LocalExecutor las tareas (y el entrenamiento) corren dentro del scheduler.
+scheduler:
+  resources:
+    requests: {cpu: 500m, memory: 2Gi}
+    limits: {cpu: "2", memory: 4Gi}
+  logGroomerSidecar:
+    enabled: false
+
+workers:
+  persistence:
+    enabled: true
+    size: 5Gi
+
+apiServer:
+  resources:
+    requests: {cpu: 250m, memory: 768Mi}
+    limits: {cpu: "1", memory: 2Gi}
+
+dagProcessor:
+  resources:
+    requests: {cpu: 100m, memory: 512Mi}
+    limits: {cpu: "1", memory: 1536Mi}
+  logGroomerSidecar:
+    enabled: false
+
+triggerer:
+  enabled: true
+  persistence:
+    enabled: false
+  resources:
+    requests: {cpu: 50m, memory: 384Mi}
+    limits: {cpu: 500m, memory: 1Gi}
+  logGroomerSidecar:
+    enabled: false
+
+# Los Jobs son inmutables: como hooks de Argo CD se recrean en cada sincronización.
+migrateDatabaseJob:
+  useHelmHooks: false
+  applyCustomEnv: false
+  jobAnnotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+  resources:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {cpu: 500m, memory: 1Gi}
+
+createUserJob:
+  useHelmHooks: false
+  applyCustomEnv: false
+  jobAnnotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+  defaultUser:
+    username: admin
+    email: admin@example.com
+    firstName: admin
+    lastName: housing
+    password: "$(AIRFLOW_ADMIN_PASSWORD)"
+  env:
+    - name: AIRFLOW_ADMIN_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: airflow-admin
+          key: password
+  resources:
+    requests: {cpu: 100m, memory: 256Mi}
+    limits: {cpu: 500m, memory: 1Gi}

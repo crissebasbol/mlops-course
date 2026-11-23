@@ -17,6 +17,9 @@ Cada carpeta es un PR para el repo [`housing-price-mlops`](https://github.com/cr
 | 7a | - | Fabián Ramírez | 6 | Fusionado (plataforma de datos) |
 | 7b | - | Cristhian Bolaños | 7a | Fusionado: CI publica `housing-mlflow:sha-ea92f63` y actualiza el tag solo |
 | 8 | - | Cristian Organista | 7a y 7b | Fusionado (apps de Argo CD); app raíz aplicada en el clúster |
+| 9 | - | Cristhian Bolaños | 7a | Fusionado (DAG de Airflow, imagen y prueba de punta a punta en Docker) |
+| 10a | `10a-imagen-airflow/` | Cristian Organista | 9 | Pendiente: build de la imagen en CI y valores del chart |
+| 10b | `10b-despliegue-airflow/` | Cristian Organista | 10a y el commit del bot | Pendiente: Secrets en la .106 antes de fusionar; después, una corrida del lote 0 |
 
 ## Preparar el entorno (una sola vez)
 

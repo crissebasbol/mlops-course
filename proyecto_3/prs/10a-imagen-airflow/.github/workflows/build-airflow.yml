@@ -1,0 +1,39 @@
+name: Build Airflow
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - airflow/Dockerfile
+      - airflow/requirements.txt
+      - airflow/dags/**
+      - housing_ml/pyproject.toml
+      - housing_ml/src/**
+      - .github/workflows/build-airflow.yml
+      - .github/workflows/_build-push.yml
+  pull_request:
+    paths:
+      - airflow/Dockerfile
+      - airflow/requirements.txt
+      - airflow/dags/**
+      - housing_ml/pyproject.toml
+      - housing_ml/src/**
+      - .github/workflows/build-airflow.yml
+      - .github/workflows/_build-push.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  airflow:
+    uses: ./.github/workflows/_build-push.yml
+    with:
+      component: airflow
+      image: crissebasbol/housing-airflow
+      context: .
+      dockerfile: airflow/Dockerfile
+      manifest: airflow/values.yaml
+      yq_path: .images.airflow.tag
+      value: tag
+    secrets: inherit
