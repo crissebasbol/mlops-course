@@ -25,8 +25,8 @@ Cada carpeta es un PR para el repo [`housing-price-mlops`](https://github.com/cr
 | 11b | - | Fabián Ramírez | 11a | Fusionado (#20): app `serving` *Synced/Healthy*, 2 réplicas en `nodo-serving`, sin champion todavía |
 | 12a | - | Cristhian Bolaños | 11b | Fusionado (#21): bot `housing-streamlit:sha-0ccd1d3` |
 | 12b | - | Cristhian Bolaños | 12a | Fusionado: Streamlit desplegado en `:8007` |
-| 13a | `13a-observabilidad/` | Fabián Ramírez | 11b | Pendiente: Prometheus y Grafana (app `observability`); `create_secrets.sh` en la .106 antes de fusionar (14 Secrets) |
-| 13b | `13b-locust/` | Fabián Ramírez | 13a y la API con champion | Pendiente: Locust en la misma app y `run_levels.sh` |
+| 13a | - | Fabián Ramírez | 11b | Fusionado: Prometheus y Grafana en la app `observability` |
+| 13b | - | Fabián Ramírez | 13a | Fusionado (#24): Locust arriba; falta correr `run_levels.sh` |
 
 ## Preparar el entorno (una sola vez)
 
