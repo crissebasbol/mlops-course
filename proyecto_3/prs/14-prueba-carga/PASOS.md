@@ -19,11 +19,18 @@ cd ~/housing-price-mlops && git switch master && git pull
 argocd app get serving --refresh | tail -10           # debe aparecer HorizontalPodAutoscaler api
 kubectl -n housing-mlops get hpa api                  # TARGETS con un porcentaje (no <unknown>), MINPODS 2, MAXPODS 3
 kubectl -n housing-mlops get pods -l app=api          # 2 réplicas Running
+argocd app get observability --refresh | tail -6      # ConfigMap grafana-dashboards Synced (trae el panel nuevo)
 ```
+
+En Grafana (`:8008`), en un par de minutos:
+- el indicador de arriba se llama **"Pods de la API"** y marca 2;
+- en la fila **Recursos de los pods de la API (cAdvisor)** aparece el panel **"Pods de la API y réplicas que responden"**.
+
+Si no aparece, recargar la página del dashboard.
 
 Si `TARGETS` dice `<unknown>` por más de un minuto, enviar la salida de `kubectl -n housing-mlops describe hpa api | tail -15`.
 
-**Captura:** el `argocd app get serving` con el HPA y el `get hpa`.
+**Captura:** el `argocd app get serving` con el HPA, el `get hpa` y el panel nuevo en Grafana.
 
 ## 2. Segunda prueba de carga (unos 15 minutos)
 
