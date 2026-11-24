@@ -10,7 +10,7 @@ Contexto:
 
 ## 1. Fusionar el PR `feature/hpa-api`
 
-En GitHub: aprobar y fusionar con **Create a merge commit**. No cambia imágenes (no hay build), así que Argo lo aplica en la siguiente sincronización.
+En GitHub: aprobar y fusionar con **Create a merge commit**. No cambia imágenes (no hay build), así que Argo lo aplica en la siguiente sincronización. También trae el panel de pods en Grafana, que se actualiza solo en un par de minutos.
 
 Al aplicarlo, el Deployment deja de fijar `replicas`. Puede bajar un momento a 1 réplica, y el HPA lo sube a 2 en unos segundos. Es normal.
 
@@ -50,7 +50,7 @@ Debe pasar de 2 a 3 réplicas cuando la CPU supere el 70 %, y volver a 2 unos 3 
 - Terminal 2 cuando el HPA sube a 3 réplicas (columnas `TARGETS` y `REPLICAS`).
 - Al **final de cada escalón**, Grafana con:
   - peticiones por segundo (total y por réplica, donde debe aparecer la tercera);
-  - "Réplicas de la API arriba";
+  - "Pods de la API" y el panel nuevo "Pods de la API y réplicas que responden" (fila de recursos): ahí se ve el paso de 2 a 3;
   - latencia de `/predict` p50, p95 y p99;
   - peticiones en curso;
   - CPU, memoria y throttling de los pods de la API.
