@@ -27,7 +27,7 @@ Cada uno graba su bloque por separado (pantalla y voz) y se unen al final. Así 
 
 ## Bloque 1. Presentación, arquitectura y repositorio (Cristhian Bolaños, 1:40)
 
-**Pestañas:** el repo en GitHub (vista de archivos) y el mapa interactivo (`docs/arquitectura.html`, abierto en local o en GitHub Pages si ya está activo) con zoom al 80 % para que quepa entero en 1920x1080.
+**Pestañas:** el repo en GitHub (vista de archivos) y el mapa interactivo (https://crissebasbol.github.io/housing-price-mlops/arquitectura.html) con zoom al 80 % para que quepa entero en 1920x1080.
 
 **Mostrar y decir:**
 
@@ -36,7 +36,7 @@ Cada uno graba su bloque por separado (pantalla y voz) y se unen al final. Así 
    - Botón **Un cambio en Git** (se reproduce solo, un paso cada 4 s): "Arriba, el ciclo GitOps: un push dispara GitHub Actions, que publica la imagen en DockerHub con el SHA del commit y escribe el tag nuevo en el manifiesto; Argo CD ve ese commit y sincroniza el clúster."
    - "El clúster tiene dos nodos. En `nodo-data` está la ingesta y el entrenamiento: la API de datos, Airflow, PostgreSQL con RAW, CLEAN y auditoría, MinIO y MLflow. En `nodo-serving`, la inferencia y la observabilidad: FastAPI, Streamlit, Prometheus y Grafana."
    - Botón **Un lote de datos**: "Cada 15 minutos Airflow pide un lote, lo valida, decide si entrenar y, si el candidato pasa las compuertas, mueve el alias `champion` en MLflow. La API revisa ese alias y carga el modelo nuevo sin reiniciarse."
-   - Si sobra tiempo, tocar **FastAPI** para mostrar el panel con sus réplicas y recursos. Los recorridos **Una predicción** y **Prueba de carga** los puede usar Fabián al abrir los bloques 5 y 6.
+   - Si sobra tiempo, tocar **FastAPI** para mostrar el panel con sus réplicas y recursos. Fabián retoma el mapa al abrir los bloques 5 y 6.
 3. **(1:10-1:40) Organización del repositorio**, recorriendo las carpetas en GitHub:
    - "`housing_ml` es el paquete con la lógica del modelo: esquema, calidad, drift, decisión y compuertas. Lo usan igual Airflow y la API, con las mismas versiones."
    - "`airflow`, `api` y `streamlit` tienen el código y el Dockerfile de cada servicio; `database`, `minio`, `mlflow` y `observability`, sus manifiestos; `argocd`, las apps; `.github/workflows`, la CI. El README es el informe, con la bitácora y la evidencia de cada etapa."
@@ -81,21 +81,21 @@ Cada uno graba su bloque por separado (pantalla y voz) y se unen al final. Así 
 
 ## Bloque 5. FastAPI y Streamlit (Fabián Ramírez, 1:30)
 
-**Pestañas:** Swagger de la API (`:8005/docs`); `:8005/model-info`; Streamlit (`:8007`) en Predicción y en Modelo en producción.
+**Pestañas:** el mapa en el recorrido de una predicción (https://crissebasbol.github.io/housing-price-mlops/arquitectura.html#inferencia, zoom al 80 %); Swagger de la API (`:8005/docs`); `:8005/model-info`; Streamlit (`:8007`) en Predicción y en Modelo en producción.
 
 **Mostrar y decir:**
 
-1. **(6:30-7:05) FastAPI.** En Swagger, ejecutar `POST /predict` con el ejemplo: "La respuesta trae el precio, la versión y el alias del modelo." Abrir `/model-info`: "La API nunca tiene una versión escrita: carga el alias `champion` de MLflow y el challenger en sombra. Revisa los alias cada 30 segundos y, si cambian, carga el modelo nuevo y lo reemplaza de forma atómica, sin reiniciar. Si la descarga falla, sigue con el anterior. Cada inferencia queda registrada en PostgreSQL."
+1. **(6:30-7:05) Recorrido y FastAPI.** Abrir el mapa en `#inferencia` y dejar que avancen los dos primeros pasos (unos 8 s): "El usuario entra a Streamlit y Streamlit le envía la propiedad a la API, que responde con el champion y registra cada inferencia." Pasar a Swagger, ejecutar `POST /predict` con el ejemplo: "La respuesta trae el precio, la versión y el alias del modelo." Abrir `/model-info`: "La API nunca tiene una versión escrita: carga el alias `champion` de MLflow y el challenger en sombra. Revisa los alias cada 30 segundos y, si cambian, carga el modelo nuevo y lo reemplaza de forma atómica, sin reiniciar. Si la descarga falla, sigue con el anterior. Cada inferencia queda registrada en PostgreSQL."
 2. **(7:05-7:30) Streamlit, inferencia.** Predecir con el formulario y pulsar "¿Por qué este precio?": "La interfaz siempre pasa por la API, así que muestra la misma versión que producción, y explica la predicción con SHAP."
 3. **(7:30-8:00) Streamlit, historial y modelo.** Página Historial de lotes: "Cada lote con su decisión, la razón, el MAPE del candidato frente al productivo y el enlace a MLflow." Página Modelo en producción: "Aquí se ven las recargas: las dos réplicas cargaron las versiones 2, 3 y 4 sin reiniciarse, con el mismo nombre de pod."
 
 ## Bloque 6. Prueba de carga y cierre (Fabián Ramírez, 1:30)
 
-**Pestañas:** Grafana, dashboard **Housing API**, con el rango de las pruebas del 23 de noviembre (de 18:45 a 19:50 aproximadamente, o "Last 2 days" y hacer zoom); Locust (`:8010`) o la terminal con el `resumen.csv`.
+**Pestañas:** el mapa en el recorrido de la carga (https://crissebasbol.github.io/housing-price-mlops/arquitectura.html#carga, zoom al 80 %); Grafana, dashboard **Housing API**, con el rango de las pruebas del 23 de noviembre (de 18:45 a 19:50 aproximadamente, o "Last 2 days" y hacer zoom); Locust (`:8010`) o la terminal con el `resumen.csv`.
 
 **Mostrar y decir:**
 
-1. **(8:00-8:20) Cómo se hizo.** "Locust corre en el clúster, en otro nodo, con dos tipos de usuario: predicciones normales y filas del holdout con su precio real, para medir el error en línea. Corrimos escalones de 10, 25, 50 y 100 usuarios."
+1. **(8:00-8:20) Cómo se hizo.** Abrir el mapa en `#carga`; el primer paso resalta la flecha de Locust a la API mientras se dice: "Locust corre en el clúster, en otro nodo, con dos tipos de usuario: predicciones normales y filas del holdout con su precio real, para medir el error en línea. Corrimos escalones de 10, 25, 50 y 100 usuarios."
 2. **(8:20-9:05) Qué se vio en Grafana**, recorriendo los paneles en el rango de las pruebas:
    - "Con dos réplicas fijas, la API se estancó en unos 8 peticiones por segundo: más usuarios solo alargaban la cola, de 300 milisegundos a 11 segundos de mediana."
    - "En los recursos se ve por qué: la CPU de cada réplica pegada a su límite. Cada predicción cuesta unos 250 milisegundos de CPU."
