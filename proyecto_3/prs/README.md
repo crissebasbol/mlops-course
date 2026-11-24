@@ -28,6 +28,7 @@ Cada carpeta es un PR para el repo [`housing-price-mlops`](https://github.com/cr
 | 13a | - | Fabián Ramírez | 11b | Fusionado: Prometheus y Grafana en la app `observability` |
 | 13b | - | Fabián Ramírez | 13a | Fusionado (#24): Locust arriba; falta correr `run_levels.sh` |
 | 14 | - | Todos | 17 | Hecho: dos pruebas de carga (2 réplicas fijas y HPA de 2 a 3) con capturas |
+| 15 | `15-capturas-readme/` | Todos | 17 | Pendiente: 9 capturas que faltan para el README (sin PR) |
 
 ## Preparar el entorno (una sola vez)
 
