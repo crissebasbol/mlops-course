@@ -27,7 +27,7 @@ Cada carpeta es un PR para el repo [`housing-price-mlops`](https://github.com/cr
 | 12b | - | Cristhian Bolaños | 12a | Fusionado: Streamlit desplegado en `:8007` |
 | 13a | - | Fabián Ramírez | 11b | Fusionado: Prometheus y Grafana en la app `observability` |
 | 13b | - | Fabián Ramírez | 13a | Fusionado (#24): Locust arriba; falta correr `run_levels.sh` |
-| 14 | `14-prueba-carga/` | Todos | 13b | Pasos de la noche del 23 nov (sin PR): verificar el #25 desplegado y correr `run_levels.sh 10 25 50 100` con la sombra al 20 % |
+| 14 | `14-prueba-carga/` | Todos | 17 | Pasos de la noche del 23 nov (sin PR): fusionar `feature/hpa-api`, verificar el HPA y segunda prueba de carga |
 
 ## Preparar el entorno (una sola vez)
 

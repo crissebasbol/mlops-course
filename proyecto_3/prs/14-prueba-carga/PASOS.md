@@ -1,78 +1,79 @@
-# Pasos del 23 nov (noche): prueba de carga con la sombra al 20 %
+# Pasos del 23 nov (noche): autoescalado de la API y segunda prueba de carga
 
 Todo se corre en la **.106** (`ssh estudiante@10.43.97.106`), desde el clon del repo de entrega.
 
 Contexto:
-- **Antes:** la referencia es la prueba manual con la UI de Locust (100 usuarios, sombra al 100 %: unos 6 RPS y p50 de 15 s). Ya está en las capturas `locust_03` y `grafana_02`.
-- **Después:** el PR #25 dejó la sombra en el 20 % del tráfico y le dio más margen a las sondas de la API. El #26 arregló el permiso de `run_levels.sh`.
+- **Antes:** la primera prueba con `run_levels.sh` (2 réplicas fijas, sombra al 20 %) se estancó en unos 8 RPS, 4 por réplica, con la CPU de cada réplica en su límite. Ya está en las capturas `locust_04` a `grafana_06`.
+- **Ahora:** el PR `feature/hpa-api` agrega un HPA que mantiene la API entre 2 y 3 réplicas según la CPU. Esta segunda prueba mide si la capacidad crece cuando el HPA escala.
 
-Esta corrida mide el **después**.
+**Límite:** el PR se fusiona antes del **lunes 23 a las 23:59**.
 
-## 0. Preparar la terminal
+## 1. Fusionar el PR `feature/hpa-api`
+
+En GitHub: aprobar y fusionar con **Create a merge commit**. No cambia imágenes (no hay build), así que Argo lo aplica en la siguiente sincronización.
+
+Al aplicarlo, el Deployment deja de fijar `replicas`. Puede bajar un momento a 1 réplica, y el HPA lo sube a 2 en unos segundos. Es normal.
+
+```bash
+cd ~/housing-price-mlops && git switch master && git pull
+argocd app get serving --refresh | tail -10           # debe aparecer HorizontalPodAutoscaler api
+kubectl -n housing-mlops get hpa api                  # TARGETS con un porcentaje (no <unknown>), MINPODS 2, MAXPODS 3
+kubectl -n housing-mlops get pods -l app=api          # 2 réplicas Running
+```
+
+Si `TARGETS` dice `<unknown>` por más de un minuto, enviar la salida de `kubectl -n housing-mlops describe hpa api | tail -15`.
+
+**Captura:** el `argocd app get serving` con el HPA y el `get hpa`.
+
+## 2. Segunda prueba de carga (unos 15 minutos)
+
+Grafana (`http://10.43.97.106:8008`), dashboard **Housing API**, rango **Last 30 minutes**, refresco **10s**. No usar la UI web de Locust (`:8010`).
+
+**Terminal 1**, la prueba:
 
 ```bash
 cd ~/housing-price-mlops
-git switch master && git pull
-ls -l locust/run_levels.sh               # debe tener x (-rwxr-xr-x)
-kubectl config current-context           # housing
-./scripts/port_forward.sh status         # 8002 a 8011 en OK; si no: ./scripts/port_forward.sh start
+nohup ./locust/run_levels.sh 10 25 50 100 > locust/resultados_run2.log 2>&1 &
+tail -f locust/resultados_run2.log
 ```
 
-## 1. Verificar que el #25 quedó desplegado
+**Terminal 2**, el HPA en vivo:
 
 ```bash
-argocd app get serving --refresh | tail -8
-kubectl -n housing-mlops get pods -l app=api -o yaml | grep "image: crissebasbol"     # housing-api:sha-587b565
-kubectl -n housing-mlops get pods -l app=streamlit -o yaml | grep "image: crissebasbol" # housing-streamlit:sha-587b565
-curl -s http://10.43.97.106:8005/model-info | python3 -m json.tool | grep -E "shadow_sample_rate|\"version\""
+kubectl -n housing-mlops get hpa api -w
 ```
 
-Esperado: las dos imágenes con `sha-587b565`, `"shadow_sample_rate": 0.2`, champion en la versión 4 y sombra en la 5.
+Debe pasar de 2 a 3 réplicas cuando la CPU supere el 70 %, y volver a 2 unos 3 minutos después de terminar.
 
-**Capturas:**
-- el `argocd app get serving` con la sincronización;
-- Streamlit (`:8007`), página **Historial de lotes**: sin "None" y con los ciclos 1 y 12 (o el último) por defecto.
+### Capturas
 
-## 2. Prueba de carga (unos 14 minutos)
+- Terminal 2 cuando el HPA sube a 3 réplicas (columnas `TARGETS` y `REPLICAS`).
+- Al **final de cada escalón**, Grafana con:
+  - peticiones por segundo (total y por réplica, donde debe aparecer la tercera);
+  - "Réplicas de la API arriba";
+  - latencia de `/predict` p50, p95 y p99;
+  - peticiones en curso;
+  - CPU, memoria y throttling de los pods de la API.
+- Al terminar, el dashboard completo con los 4 escalones.
 
-### 2.1 Antes de empezar
-
-- Grafana (`http://10.43.97.106:8008`), dashboard **Housing API**, rango **Last 30 minutes**, refresco **10s**.
-- No usar la UI web de Locust (`:8010`) mientras corre el script.
-
-### 2.2 Correr
-
-```bash
-nohup ./locust/run_levels.sh 10 25 50 100 > locust/resultados_run.log 2>&1 &
-tail -f locust/resultados_run.log        # Ctrl+C solo deja de mirar; la prueba sigue
-```
-
-Cada escalón tiene rampa, 3 minutos estables y 30 s de descanso. El log muestra `== rep2_uN: ...` al empezar cada uno.
-
-### 2.3 Capturas
-
-Al **final de cada escalón** (antes del siguiente `==`), una captura de Grafana con:
-
-- peticiones por segundo (total y por réplica);
-- latencia de `/predict` p50, p95 y p99;
-- latencia del modelo por rol (champion y sombra);
-- tasa de error y peticiones en curso;
-- CPU, memoria y throttling de los pods de la API.
-
-Al terminar, una captura del dashboard completo con los 4 escalones.
-
-### 2.4 Al terminar
+### Al terminar
 
 ```bash
-column -s, -t < locust/resultados/resumen.csv
+column -s, -t < locust/resultados/resumen.csv     # filas de las dos pruebas; replicas = pods vistos en el escalón
+kubectl -n housing-mlops get hpa api
 kubectl -n housing-mlops top pod -l app=api
-kubectl -n housing-mlops get pods -l app=api      # anotar los RESTARTS
+kubectl -n housing-mlops get pods -l app=api      # RESTARTS
+kubectl -n housing-mlops describe hpa api | tail -12    # eventos de escalado
 ```
 
 ## 3. Qué enviar a Cristhian
 
-1. La salida de la sección 1 y las dos capturas.
-2. La salida de la sección 2.4 (`resumen.csv`, `top` y `get pods`).
-3. Las capturas de Grafana de cada escalón y la del final.
+1. La salida y las capturas de la sección 1.
+2. La salida de "Al terminar" (sección 2).
+3. Las capturas de la terminal 2 y de Grafana.
 
-Con eso se escribe el análisis de carga del README: capacidad por réplica, dónde se satura y por qué (CPU por predicción, sombra, throttling), la comparación con la prueba manual y qué conviene ajustar.
+Con eso se completa el análisis de carga del README:
+- 2 réplicas fijas frente a HPA de 2 a 3;
+- cuánto crece el throughput;
+- si la latencia baja;
+- qué limita (CPU del nodo, Prometheus y Grafana en el mismo nodo).
