@@ -27,15 +27,16 @@ Cada uno graba su bloque por separado (pantalla y voz) y se unen al final. Así 
 
 ## Bloque 1. Presentación, arquitectura y repositorio (Cristhian Bolaños, 1:40)
 
-**Pestañas:** el repo en GitHub (vista de archivos) y el README en la sección 1 (diagrama).
+**Pestañas:** el repo en GitHub (vista de archivos) y el mapa interactivo (`docs/arquitectura.html`, abierto en local o en GitHub Pages si ya está activo) con zoom al 80 % para que quepa entero en 1920x1080.
 
 **Mostrar y decir:**
 
 1. **(0:00-0:25) Presentación.** "Somos Cristhian Bolaños, Cristian Organista y Fabián Ramírez. Construimos una plataforma de MLOps que predice el precio de viviendas y, sobre todo, **decide sola** cuándo reentrenar, si un modelo nuevo es mejor que el que está en producción y cómo cambiarlo sin redesplegar la API. Todo corre en Kubernetes y se despliega desde este repositorio con Argo CD."
-2. **(0:25-1:10) Arquitectura**, sobre el diagrama del README:
-   - "Arriba, el ciclo GitOps: un push dispara GitHub Actions, que publica la imagen en DockerHub con el SHA del commit y escribe el tag nuevo en el manifiesto; Argo CD ve ese commit y sincroniza el clúster."
+2. **(0:25-1:10) Arquitectura**, sobre el mapa interactivo:
+   - Botón **Un cambio en Git** (se reproduce solo, un paso cada 4 s): "Arriba, el ciclo GitOps: un push dispara GitHub Actions, que publica la imagen en DockerHub con el SHA del commit y escribe el tag nuevo en el manifiesto; Argo CD ve ese commit y sincroniza el clúster."
    - "El clúster tiene dos nodos. En `nodo-data` está la ingesta y el entrenamiento: la API de datos, Airflow, PostgreSQL con RAW, CLEAN y auditoría, MinIO y MLflow. En `nodo-serving`, la inferencia y la observabilidad: FastAPI, Streamlit, Prometheus y Grafana."
-   - "Cada 15 minutos Airflow pide un lote, lo valida, decide si entrenar y, si el candidato pasa las compuertas, mueve el alias `champion` en MLflow. La API revisa ese alias y carga el modelo nuevo sin reiniciarse."
+   - Botón **Un lote de datos**: "Cada 15 minutos Airflow pide un lote, lo valida, decide si entrenar y, si el candidato pasa las compuertas, mueve el alias `champion` en MLflow. La API revisa ese alias y carga el modelo nuevo sin reiniciarse."
+   - Si sobra tiempo, tocar **FastAPI** para mostrar el panel con sus réplicas y recursos. Los recorridos **Una predicción** y **Prueba de carga** los puede usar Fabián al abrir los bloques 5 y 6.
 3. **(1:10-1:40) Organización del repositorio**, recorriendo las carpetas en GitHub:
    - "`housing_ml` es el paquete con la lógica del modelo: esquema, calidad, drift, decisión y compuertas. Lo usan igual Airflow y la API, con las mismas versiones."
    - "`airflow`, `api` y `streamlit` tienen el código y el Dockerfile de cada servicio; `database`, `minio`, `mlflow` y `observability`, sus manifiestos; `argocd`, las apps; `.github/workflows`, la CI. El README es el informe, con la bitácora y la evidencia de cada etapa."
